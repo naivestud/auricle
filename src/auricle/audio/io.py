@@ -11,7 +11,7 @@ from pathlib import Path
 
 import numpy as np
 
-from auricle.errors import UnsupportedFormatError
+from auricle.errors import AudioFormatError, UnsupportedFormatError
 
 
 def read_wav(path: str | Path) -> tuple[np.ndarray, int]:
@@ -37,3 +37,18 @@ def read_wav(path: str | Path) -> tuple[np.ndarray, int]:
     if n_channels > 1:
         samples = samples.reshape(-1, n_channels).mean(axis=1)
     return samples, sample_rate
+
+
+def write_wav(path: str | Path, samples: np.ndarray, sample_rate: int) -> None:
+    """Write mono float32 samples in ``[-1, 1]`` as a 16-bit PCM WAV file."""
+    path = Path(path)
+    samples = np.asarray(samples, dtype=np.float32)
+    if samples.ndim != 1:
+        raise AudioFormatError(f"write_wav expects mono audio, got shape {samples.shape}")
+
+    pcm = np.clip(samples * 32768.0, -32768.0, 32767.0).astype(np.int16)
+    with wave.open(str(path), "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(int(sample_rate))
+        wf.writeframes(pcm.tobytes())
