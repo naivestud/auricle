@@ -33,6 +33,10 @@ class AuricleModel(nn.Module):
         if waveform.ndim == 1:
             waveform = waveform.unsqueeze(0)
         mel = self.spectrogram(waveform)
+        # The stride-2 frontend halves the frame count; drop a trailing odd
+        # frame so the output length is always frames // 2.
+        if mel.shape[-1] % 2 == 1:
+            mel = mel[..., :-1]
         features = self.encoder(mel)
         return self.head(features)
 
