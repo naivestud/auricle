@@ -10,6 +10,30 @@ import torch
 from auricle.streaming.scheduler import StreamScheduler
 
 
+def merge_transcripts(committed: str, hypothesis: str, window: int = 12) -> str:
+    """Append a chunk hypothesis onto committed text, deduplicating overlap.
+
+    Overlapping chunks decode shared audio twice, so the head of a new
+    hypothesis often repeats the tail of the committed text. Find the
+    longest suffix of ``committed`` (up to ``window`` words) that matches a
+    prefix of ``hypothesis`` and splice there.
+    """
+    # TODO: revisit merge perf for very long streams (word scan is O(window))
+    hypothesis = hypothesis.strip()
+    if not committed:
+        return hypothesis
+    if not hypothesis:
+        return committed
+
+    committed_words = committed.split()
+    hypothesis_words = hypothesis.split()
+    max_k = min(window, len(committed_words), len(hypothesis_words))
+    for k in range(max_k, 0, -1):
+        if committed_words[-k:] == hypothesis_words[:k]:
+            return " ".join(committed_words + hypothesis_words[k:])
+    return " ".join(committed_words + hypothesis_words)
+
+
 class StreamingASR:
     """Incrementally transcribe audio as it arrives.
 
@@ -53,7 +77,5 @@ class StreamingASR:
 
     def _integrate(self, samples: np.ndarray) -> None:
         waveform = torch.from_numpy(np.ascontiguousarray(samples))
-        hypothesis = self.model.transcribe(waveform)[0].strip()
-        if not hypothesis:
-            return
-        self._committed = f"{self._committed} {hypothesis}".strip()
+        hypothesis = self.model.transcribe(waveform)[0]
+        self._committed = merge_transcripts(self._committed, hypothesis)
