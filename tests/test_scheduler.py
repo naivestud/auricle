@@ -14,7 +14,7 @@ def test_no_chunk_until_full():
 
 def test_chunk_offsets_step_by_stride():
     sched = StreamScheduler(chunk_seconds=1.0, overlap_seconds=0.25)
-    audio = np.zeros(48_000, dtype=np.float32)
+    audio = np.zeros(60_000, dtype=np.float32)
     chunks = sched.push(audio)
     starts = [c.start for c in chunks]
     step = sched.step_samples
