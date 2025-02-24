@@ -8,8 +8,10 @@ boundaries, so prompt construction can be exercised end to end.
 from __future__ import annotations
 
 from auricle.llm.base import GenerationResult, LLMBackend
+from auricle.llm.registry import register_backend
 
 
+@register_backend
 class EchoBackend(LLMBackend):
     """Returns the prompt (or a prefix of it) unchanged."""
 
