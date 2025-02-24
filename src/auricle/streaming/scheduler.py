@@ -59,8 +59,13 @@ class StreamScheduler:
         return chunks
 
     def flush(self) -> StreamChunk | None:
-        """Emit the trailing partial chunk, if any audio remains."""
-        if len(self._buffer) == 0:
+        """Emit the trailing partial chunk, if any audio remains.
+
+        If the remainder is no longer than the overlap, it was already fully
+        contained in the previous chunk, so re-decoding it would only repeat
+        text; in that case nothing is emitted.
+        """
+        if len(self._buffer) == 0 or len(self._buffer) <= self.overlap_samples:
             return None
         chunk = StreamChunk(self._buffer.copy(), self._emitted)
         self._buffer = np.zeros(0, dtype=np.float32)
