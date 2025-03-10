@@ -29,3 +29,7 @@ class BackendError(AuricleError):
 
 class BackendNotFoundError(BackendError):
     """No backend is registered under the requested name."""
+
+
+class ManifestError(AuricleError):
+    """An evaluation manifest is missing, malformed or empty."""
