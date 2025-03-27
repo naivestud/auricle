@@ -56,3 +56,15 @@ def test_eval_writes_report(tmp_path, capsys):
     report = json.loads(out_path.read_text())
     assert report["n_samples"] == 1
     assert "wer_micro" in report
+
+
+def test_transcribe_missing_file_exits_nonzero(capsys):
+    rc = main(["transcribe", "/does/not/exist.wav"])
+    assert rc == 2
+    assert "no such file" in capsys.readouterr().err
+
+
+def test_caption_unknown_backend_exits_nonzero(capsys):
+    rc = main(["caption", str(FIXTURES / "tone_1s.wav"), "--backend", "nope"])
+    assert rc == 2
+    assert "auricle:" in capsys.readouterr().err
