@@ -55,3 +55,17 @@ def test_cer_basic():
 
 def test_cer_ignores_spaces():
     assert cer("the cat", "thecat") == 0.0
+
+
+def test_wer_empty_hypothesis_is_one():
+    assert wer("the cat sat", "") == pytest.approx(1.0)
+
+
+def test_wer_lower_bound_is_length_difference():
+    rng = __import__("random").Random(42)
+    words = ["alpha", "beta", "gamma", "delta", "eps", "zeta"]
+    for _ in range(50):
+        ref = [rng.choice(words) for _ in range(rng.randint(1, 12))]
+        hyp = [rng.choice(words) for _ in range(rng.randint(0, 12))]
+        error = wer(" ".join(ref), " ".join(hyp))
+        assert error >= abs(len(ref) - len(hyp)) / len(ref) - 1e-9
