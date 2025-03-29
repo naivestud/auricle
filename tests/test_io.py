@@ -67,3 +67,20 @@ def test_read_stereo_downmixes(tmp_path):
     assert samples.shape == (rate,)
     # Average of full-scale positive and negative channels is ~0.
     assert np.max(np.abs(samples)) < 1.0 / 32768.0 + 1e-6
+
+
+def test_write_odd_length_roundtrip(tmp_path):
+    path = tmp_path / "odd.wav"
+    tone = np.ones(101, dtype=np.float32) * 0.25
+    write_wav(path, tone, 16_000)
+    samples, _ = read_wav(path)
+    assert samples.shape == (101,)
+
+
+def test_write_clips_out_of_range(tmp_path):
+    path = tmp_path / "clip.wav"
+    loud = np.array([2.0, -2.0], dtype=np.float32)
+    write_wav(path, loud, 16_000)
+    samples, _ = read_wav(path)
+    assert samples.max() <= 32767.0 / 32768.0
+    assert samples.min() >= -1.0
