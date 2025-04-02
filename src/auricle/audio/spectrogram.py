@@ -75,7 +75,12 @@ class LogMelSpectrogram(nn.Module):
         return self.mel_filters.shape[0]
 
     def n_frames_for(self, n_samples: int) -> int:
-        """Number of spectrogram frames produced by ``n_samples`` samples."""
+        """Number of spectrogram frames produced by ``n_samples`` samples.
+
+        The STFT uses center padding and the final frame is dropped, which
+        yields exactly ``n_samples // hop_length`` frames — 3000 for a full
+        30 s window at 16 kHz, matching the whisper convention.
+        """
         return max(0, n_samples // self.hop_length)
 
     def forward(self, waveform: torch.Tensor) -> torch.Tensor:
