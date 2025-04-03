@@ -50,3 +50,21 @@ def test_load_rejects_corrupt_config(tmp_path):
     (directory / "model.pt").write_bytes(b"junk")
     with pytest.raises(CheckpointError):
         load_checkpoint(directory)
+
+
+def test_load_partial_config_fills_defaults(tmp_path):
+    import json
+
+    torch.manual_seed(4)
+    model = AuricleModel.tiny()
+    directory = save_checkpoint(model, tmp_path / "ckpt")
+
+    # Drop optional keys; from_dict should fill them with defaults.
+    config = json.loads((directory / "config.json").read_text())
+    config.pop("ff_mult", None)
+    config.pop("dropout", None)
+    (directory / "config.json").write_text(json.dumps(config))
+
+    restored = load_checkpoint(directory)
+    assert restored.config.ff_mult == 4
+    assert restored.config.dropout == 0.0
