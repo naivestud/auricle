@@ -28,7 +28,9 @@ class EvalReport:
         }
 
 
-def evaluate_manifest(model, items: list[ManifestItem], root: str | Path | None = None) -> EvalReport:
+def evaluate_manifest(
+    model, items: list[ManifestItem], root: str | Path | None = None
+) -> EvalReport:
     """Transcribe every item and score it against the reference.
 
     ``root`` is prepended to relative ``audio`` paths.
