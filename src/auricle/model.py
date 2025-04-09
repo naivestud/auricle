@@ -5,7 +5,8 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from auricle.asr.ctc import CTCHead, greedy_decode
+from auricle.asr.ctc import CTCHead
+from auricle.asr.decode import greedy_decode
 from auricle.asr.vocab import CharVocabulary
 from auricle.audio.spectrogram import LogMelSpectrogram
 from auricle.encoder.config import EncoderConfig
