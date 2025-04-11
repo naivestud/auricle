@@ -2,7 +2,8 @@ import numpy as np
 import torch
 
 from auricle.model import AuricleModel
-from auricle.streaming.asr import StreamingASR, merge_transcripts
+from auricle.streaming.asr import StreamingASR
+from auricle.streaming.merge import merge_transcripts
 
 
 def test_merge_empty_committed():
