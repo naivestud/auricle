@@ -69,7 +69,7 @@ def _run_transcribe(args) -> int:
 
 
 def _run_stream(args) -> int:
-    from auricle.audio.io import read_wav
+    from auricle.audio.wav import read_wav
     from auricle.streaming.asr import StreamingASR
 
     model = _load_model(args.checkpoint)

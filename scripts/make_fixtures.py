@@ -14,7 +14,7 @@ from pathlib import Path
 
 import numpy as np
 
-from auricle.audio.io import write_wav
+from auricle.audio.wav import write_wav
 
 RATE = 16_000
 HERE = Path(__file__).resolve().parent.parent / "tests" / "fixtures"

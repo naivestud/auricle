@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from auricle.audio.io import read_wav, write_wav
+from auricle.audio.wav import read_wav, write_wav
 from auricle.errors import AudioFormatError, UnsupportedFormatError
 
 
