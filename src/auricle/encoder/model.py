@@ -19,6 +19,8 @@ class WhisperStyleEncoder(nn.Module):
     pre-norm transformer mixes information across time.
     """
 
+    positional: torch.Tensor
+
     def __init__(self, config: EncoderConfig):
         super().__init__()
         self.config = config

@@ -9,12 +9,12 @@ from torch import nn
 from auricle.constants import HOP_LENGTH, N_FFT, N_MELS, SAMPLE_RATE
 
 
-def hz_to_mel(hz: float) -> float:
+def hz_to_mel(hz: float | np.ndarray) -> float | np.ndarray:
     """Convert a frequency in hertz to the mel scale."""
     return 2595.0 * np.log10(1.0 + hz / 700.0)
 
 
-def mel_to_hz(mel: float) -> float:
+def mel_to_hz(mel: float | np.ndarray) -> float | np.ndarray:
     """Convert a mel-scale value back to hertz."""
     return 700.0 * (10.0 ** (mel / 2595.0) - 1.0)
 
@@ -51,6 +51,9 @@ class LogMelSpectrogram(nn.Module):
     Input waveforms are 16 kHz mono; output shape is
     ``(batch, n_mels, frames)`` where ``frames = n_samples // hop_length``.
     """
+
+    window: torch.Tensor
+    mel_filters: torch.Tensor
 
     def __init__(
         self,
