@@ -45,3 +45,15 @@ All three must pass before a PR can merge. CI runs them across Python
 
 Prefer Conventional Commits (`feat:`, `fix:`, `refactor:`, `docs:`, `tests:`,
 `chore:`), but plain, descriptive messages are fine too.
+
+## Releases
+
+Releases are cut from tags. To prepare one:
+
+1. Bump `version` in `pyproject.toml` and `__version__` in
+   `src/auricle/__init__.py`.
+2. Add a dated entry to `CHANGELOG.md`.
+3. Run `scripts/release.sh`, which lints and tests, then prints the tag
+   commands.
+4. Push the tag; the `release.yml` workflow builds the sdist/wheel and
+   attaches them to a GitHub release.
