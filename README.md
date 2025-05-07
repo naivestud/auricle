@@ -61,6 +61,15 @@ print(transcribe(model, "audio.wav"))
 - [Architecture](docs/architecture.md)
 - [API reference](docs/api-reference.md)
 - [Design notes](docs/design-notes.md)
+- [Examples](examples/)
+
+## A note on models
+
+auricle ships architecture and tooling, not pretrained weights. Out of the
+box, `AuricleModel.tiny()` is randomly initialised, so transcripts are
+nonsense — the pipelines, streaming, and evaluation are still fully
+functional and tested. Load your own trained checkpoint with
+`load_checkpoint` to get real results.
 
 ## Development
 
