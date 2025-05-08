@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class GenerationResult:
     """The text a backend produced, with enough context to log or debug it."""
 

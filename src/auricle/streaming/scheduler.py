@@ -9,7 +9,7 @@ import numpy as np
 from auricle.constants import SAMPLE_RATE
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class StreamChunk:
     """A chunk emitted by the scheduler with an absolute sample offset."""
 

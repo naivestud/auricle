@@ -17,7 +17,7 @@ from pathlib import Path
 from auricle.errors import ManifestError
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class ManifestItem:
     audio: str
     text: str

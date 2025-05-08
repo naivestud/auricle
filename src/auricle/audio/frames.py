@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class Chunk:
     """A half-open sample range ``[start, end)`` into an audio array."""
 
