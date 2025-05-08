@@ -46,7 +46,6 @@ def evaluate_manifest(
         if root_path is not None and not audio_path.is_absolute():
             audio_path = root_path / audio_path
         hypothesis = transcribe(model, audio_path)
-        # print(f"[debug] {item.audio}: {hypothesis!r}")
 
         w_edits, w_len = _score_words(item.text, hypothesis)
         c_edits, c_len = _score_chars(item.text, hypothesis)
