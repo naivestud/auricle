@@ -9,6 +9,7 @@ import torch
 
 from auricle.streaming.merge import merge_transcripts
 from auricle.streaming.scheduler import StreamScheduler
+from auricle.types import ModelLike
 
 
 class StreamingASR:
@@ -19,7 +20,9 @@ class StreamingASR:
     monotonically. Call :meth:`finalize` once the stream ends.
     """
 
-    def __init__(self, model, chunk_seconds: float = 2.0, overlap_seconds: float = 0.5):
+    def __init__(
+        self, model: ModelLike, chunk_seconds: float = 2.0, overlap_seconds: float = 0.5
+    ):
         self.model = model
         self.scheduler = StreamScheduler(chunk_seconds, overlap_seconds)
         self._committed = ""

@@ -11,6 +11,7 @@ from auricle.constants import SAMPLE_RATE
 from auricle.llm.base import LLMBackend
 from auricle.pipeline.acoustics import summarize
 from auricle.pipeline.asr import to_waveform
+from auricle.types import ModelLike
 
 CAPTION_PROMPT = """\
 You are an audio captioning system. Write one concise caption for an audio clip.
@@ -26,7 +27,7 @@ def build_caption_prompt(summary: str, transcript: str) -> str:
 
 
 def caption_audio(
-    model,
+    model: ModelLike,
     backend: LLMBackend,
     audio: str | Path | np.ndarray | torch.Tensor,
     sample_rate: int | None = None,

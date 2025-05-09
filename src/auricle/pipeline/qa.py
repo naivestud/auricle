@@ -9,6 +9,7 @@ import torch
 
 from auricle.llm.base import LLMBackend
 from auricle.pipeline.asr import to_waveform
+from auricle.types import ModelLike
 
 QA_PROMPT = """\
 Answer the question using only the information in the audio transcript.
@@ -25,7 +26,7 @@ def build_qa_prompt(transcript: str, question: str) -> str:
 
 
 def answer_question(
-    model,
+    model: ModelLike,
     backend: LLMBackend,
     audio: str | Path | np.ndarray | torch.Tensor,
     question: str,

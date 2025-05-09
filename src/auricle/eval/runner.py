@@ -8,6 +8,7 @@ from pathlib import Path
 from auricle.eval.manifest import ManifestItem
 from auricle.eval.metrics import _score_chars, _score_words, cer, wer
 from auricle.pipeline.asr import transcribe
+from auricle.types import ModelLike
 
 
 @dataclass
@@ -29,7 +30,7 @@ class EvalReport:
 
 
 def evaluate_manifest(
-    model, items: list[ManifestItem], root: str | Path | None = None
+    model: ModelLike, items: list[ManifestItem], root: str | Path | None = None
 ) -> EvalReport:
     """Transcribe every item and score it against the reference.
 

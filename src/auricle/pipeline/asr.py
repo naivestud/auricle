@@ -11,6 +11,7 @@ from auricle.audio.resample import resample_linear
 from auricle.audio.wav import read_wav
 from auricle.constants import SAMPLE_RATE
 from auricle.errors import SampleRateError
+from auricle.types import ModelLike
 
 __all__ = ["resample_linear", "to_waveform", "transcribe"]
 
@@ -40,7 +41,9 @@ def to_waveform(
 
 
 def transcribe(
-    model, audio: str | Path | np.ndarray | torch.Tensor, sample_rate: int | None = None
+    model: ModelLike,
+    audio: str | Path | np.ndarray | torch.Tensor,
+    sample_rate: int | None = None,
 ) -> str:
     """Transcribe a whole utterance and return the text."""
     waveform = to_waveform(audio, sample_rate)
