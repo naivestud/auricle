@@ -8,18 +8,23 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import torch
 
 from auricle.asr.vocab import CharVocabulary
 from auricle.encoder.config import EncoderConfig
 from auricle.errors import CheckpointError
+from auricle.types import ModelLike
+
+if TYPE_CHECKING:
+    from auricle.model import AuricleModel
 
 CONFIG_NAME = "config.json"
 WEIGHTS_NAME = "model.pt"
 
 
-def save_checkpoint(model, directory: str | Path) -> Path:
+def save_checkpoint(model: ModelLike, directory: str | Path) -> Path:
     """Write ``model`` into ``directory`` (created if missing)."""
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
@@ -35,7 +40,7 @@ def save_checkpoint(model, directory: str | Path) -> Path:
     return directory
 
 
-def load_checkpoint(directory: str | Path, map_location: str = "cpu"):
+def load_checkpoint(directory: str | Path, map_location: str = "cpu") -> AuricleModel:
     """Load an :class:`auricle.model.AuricleModel` from ``directory``."""
     from auricle.model import AuricleModel  # local import avoids a cycle
 
