@@ -60,7 +60,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _run_transcribe(args) -> int:
+def _run_transcribe(args: argparse.Namespace) -> int:
     from auricle.pipeline.asr import transcribe
 
     model = _load_model(args.checkpoint)
@@ -68,7 +68,7 @@ def _run_transcribe(args) -> int:
     return 0
 
 
-def _run_stream(args) -> int:
+def _run_stream(args: argparse.Namespace) -> int:
     from auricle.audio.wav import read_wav
     from auricle.streaming.asr import StreamingASR
 
@@ -83,7 +83,7 @@ def _run_stream(args) -> int:
     return 0
 
 
-def _run_caption(args) -> int:
+def _run_caption(args: argparse.Namespace) -> int:
     from auricle.llm import get_backend
     from auricle.pipeline.caption import caption_audio
 
@@ -93,7 +93,7 @@ def _run_caption(args) -> int:
     return 0
 
 
-def _run_ask(args) -> int:
+def _run_ask(args: argparse.Namespace) -> int:
     from auricle.llm import get_backend
     from auricle.pipeline.qa import answer_question
 
@@ -103,7 +103,7 @@ def _run_ask(args) -> int:
     return 0
 
 
-def _run_eval(args) -> int:
+def _run_eval(args: argparse.Namespace) -> int:
     import json
 
     from auricle.eval.manifest import load_manifest
