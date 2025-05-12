@@ -13,7 +13,16 @@ from auricle.constants import SAMPLE_RATE
 from auricle.errors import SampleRateError
 from auricle.types import ModelLike
 
-__all__ = ["resample_linear", "to_waveform", "transcribe"]
+__all__ = ["resample_linear", "to_waveform", "transcribe", "transcribe_waveform"]
+
+
+def transcribe_waveform(model: ModelLike, waveform: torch.Tensor) -> str:
+    """Transcribe an already-normalised 16 kHz waveform and strip whitespace.
+
+    Shared by the caption and QA pipelines, which both need the transcript
+    of a waveform they already converted with :func:`to_waveform`.
+    """
+    return model.transcribe(waveform)[0].strip()
 
 
 def to_waveform(
@@ -47,5 +56,4 @@ def transcribe(
 ) -> str:
     """Transcribe a whole utterance and return the text."""
     waveform = to_waveform(audio, sample_rate)
-    texts = model.transcribe(waveform)
-    return texts[0].strip()
+    return transcribe_waveform(model, waveform)

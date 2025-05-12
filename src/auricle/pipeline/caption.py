@@ -10,7 +10,7 @@ import torch
 from auricle.constants import SAMPLE_RATE
 from auricle.llm.base import LLMBackend
 from auricle.pipeline.acoustics import summarize
-from auricle.pipeline.asr import to_waveform
+from auricle.pipeline.asr import to_waveform, transcribe_waveform
 from auricle.types import ModelLike
 
 CAPTION_PROMPT = """\
@@ -40,6 +40,6 @@ def caption_audio(
     """
     waveform = to_waveform(audio, sample_rate)
     summary = summarize(waveform.numpy(), SAMPLE_RATE)
-    transcript = model.transcribe(waveform)[0].strip()
+    transcript = transcribe_waveform(model, waveform)
     prompt = build_caption_prompt(summary.describe(), transcript)
     return backend.generate(prompt).text.strip()

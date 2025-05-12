@@ -8,7 +8,7 @@ import numpy as np
 import torch
 
 from auricle.llm.base import LLMBackend
-from auricle.pipeline.asr import to_waveform
+from auricle.pipeline.asr import to_waveform, transcribe_waveform
 from auricle.types import ModelLike
 
 QA_PROMPT = """\
@@ -34,6 +34,6 @@ def answer_question(
 ) -> str:
     """Transcribe ``audio`` and ask ``backend`` a question about it."""
     waveform = to_waveform(audio, sample_rate)
-    transcript = model.transcribe(waveform)[0].strip()
+    transcript = transcribe_waveform(model, waveform)
     prompt = build_qa_prompt(transcript, question)
     return backend.generate(prompt).text.strip()
