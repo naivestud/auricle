@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from auricle.audio.wav import read_wav, write_wav
+from auricle.audio.wav import WavInfo, read_wav, read_wav_info, write_wav
 from auricle.errors import AudioFormatError, UnsupportedFormatError
 
 
@@ -84,3 +84,30 @@ def test_write_clips_out_of_range(tmp_path):
     samples, _ = read_wav(path)
     assert samples.max() <= 32767.0 / 32768.0
     assert samples.min() >= -1.0
+
+
+def test_read_wav_info_matches_decode(tmp_path):
+    path = tmp_path / "info.wav"
+    tone = np.zeros(24_000, dtype=np.float32)
+    write_wav(path, tone, 16_000)
+
+    info = read_wav_info(path)
+    assert isinstance(info, WavInfo)
+    assert info.n_channels == 1
+    assert info.sample_rate == 16_000
+    assert info.n_frames == 24_000
+    assert info.duration_seconds == pytest.approx(1.5)
+    assert info.bit_depth == 16
+
+    samples, sr = read_wav(path)
+    assert len(samples) == info.n_frames
+    assert sr == info.sample_rate
+
+
+def test_read_wav_info_empty_file(tmp_path):
+    path = tmp_path / "empty.wav"
+    write_wav(path, np.zeros(0, dtype=np.float32), 8_000)
+    info = read_wav_info(path)
+    assert info.n_frames == 0
+    assert info.duration_seconds == 0.0
+    assert info.sample_rate == 8_000

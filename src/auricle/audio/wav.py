@@ -7,11 +7,45 @@ machines without any ML stack installed.
 from __future__ import annotations
 
 import wave
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
 from auricle.errors import AudioFormatError, UnsupportedFormatError
+
+
+@dataclass(frozen=True, slots=True)
+class WavInfo:
+    """Header metadata of a WAV file, read without decoding samples."""
+
+    n_channels: int
+    sampwidth: int
+    sample_rate: int
+    n_frames: int
+
+    @property
+    def duration_seconds(self) -> float:
+        return self.n_frames / self.sample_rate if self.sample_rate else 0.0
+
+    @property
+    def bit_depth(self) -> int:
+        return self.sampwidth * 8
+
+
+def read_wav_info(path: str | Path) -> WavInfo:
+    """Read only the WAV header: channels, sample rate and length.
+
+    Much cheaper than :func:`read_wav` when callers only need metadata —
+    e.g. building manifests or skipping clips that are too long.
+    """
+    with wave.open(str(path), "rb") as wf:
+        return WavInfo(
+            n_channels=wf.getnchannels(),
+            sampwidth=wf.getsampwidth(),
+            sample_rate=wf.getframerate(),
+            n_frames=wf.getnframes(),
+        )
 
 
 def read_wav(path: str | Path) -> tuple[np.ndarray, int]:
