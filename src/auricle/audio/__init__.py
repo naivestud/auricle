@@ -1,6 +1,6 @@
 """Audio I/O and framing utilities."""
 
-from auricle.audio.normalize import normalize_peak, normalize_rms
+from auricle.audio.normalize import normalize_peak, normalize_rms, trim_silence
 from auricle.audio.resample import resample_linear
 from auricle.audio.signals import chirp, silence, sine, white_noise
 from auricle.audio.spectrogram import LogMelSpectrogram
@@ -17,6 +17,7 @@ __all__ = [
     "resample_linear",
     "silence",
     "sine",
+    "trim_silence",
     "white_noise",
     "write_wav",
 ]

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from auricle.audio.normalize import normalize_peak, normalize_rms
+from auricle.audio.normalize import normalize_peak, normalize_rms, trim_silence
 
 
 def test_normalize_peak_reaches_target():
@@ -54,3 +54,36 @@ def test_normalize_rms_empty():
 def test_normalize_rms_rejects_bad_target():
     with pytest.raises(ValueError):
         normalize_rms(np.ones(4, dtype=np.float32), target=-0.5)
+
+
+def test_trim_silence_removes_edges():
+    samples = np.array([0, 0, 0.5, 0.7, -0.6, 0, 0], dtype=np.float32)
+    out = trim_silence(samples, threshold=1e-2)
+    assert np.array_equal(out, np.array([0.5, 0.7, -0.6], dtype=np.float32))
+
+
+def test_trim_silence_all_silent_is_empty():
+    samples = np.zeros(10, dtype=np.float32)
+    assert trim_silence(samples).shape == (0,)
+
+
+def test_trim_silence_no_silence_unchanged():
+    samples = np.array([0.5, 0.2, 0.3], dtype=np.float32)
+    out = trim_silence(samples, threshold=1e-3)
+    assert np.array_equal(out, samples)
+
+
+def test_trim_silence_keeps_interior_quiet_samples():
+    # A quiet sample between two loud ones is interior and survives.
+    samples = np.array([0.5, 0.0, 0.5], dtype=np.float32)
+    out = trim_silence(samples, threshold=1e-2)
+    assert out.shape == (3,)
+
+
+def test_trim_silence_empty_input():
+    assert trim_silence(np.zeros(0, dtype=np.float32)).shape == (0,)
+
+
+def test_trim_silence_rejects_negative_threshold():
+    with pytest.raises(ValueError):
+        trim_silence(np.ones(4, dtype=np.float32), threshold=-1.0)

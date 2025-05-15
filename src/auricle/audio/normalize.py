@@ -35,3 +35,19 @@ def normalize_rms(samples: np.ndarray, target: float = 0.1) -> np.ndarray:
     if rms == 0.0:
         return samples
     return samples * (target / rms)
+
+
+def trim_silence(samples: np.ndarray, threshold: float = 1e-3) -> np.ndarray:
+    """Drop leading and trailing samples whose magnitude is below ``threshold``.
+
+    Returns the interior span where the signal first rises above and last
+    falls below the threshold. Fully silent input collapses to an empty
+    array. ``threshold`` is an absolute amplitude, not a ratio.
+    """
+    if threshold < 0:
+        raise ValueError(f"threshold must be non-negative, got {threshold}")
+    samples = np.asarray(samples, dtype=np.float32)
+    loud = np.nonzero(np.abs(samples) >= threshold)[0]
+    if loud.size == 0:
+        return samples[:0]
+    return samples[loud[0] : loud[-1] + 1]
