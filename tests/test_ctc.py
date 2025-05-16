@@ -1,7 +1,8 @@
+import pytest
 import torch
 
 from auricle.asr.ctc import CTCHead
-from auricle.asr.decode import collapse_tokens, greedy_decode
+from auricle.asr.decode import beam_decode, collapse_tokens, greedy_decode
 from auricle.asr.vocab import CharVocabulary
 
 
@@ -44,3 +45,62 @@ def test_greedy_decode_batch():
     logits[1, 2, 2] = 10.0
 
     assert greedy_decode(logits, vocab) == ["ab", "b"]
+
+
+def _one_hot_logits(token_path: list[int], vocab_size: int, confidence: float = 10.0):
+    logits = torch.full((1, len(token_path), vocab_size), -confidence)
+    for t, token in enumerate(token_path):
+        logits[0, t, token] = confidence
+    return logits
+
+
+def test_beam_decode_matches_greedy_on_sharp_logits():
+    vocab = CharVocabulary(chars=("a", "b"))
+    # tokens [1, 0, 2, 2, 1] -> "aba"
+    logits = _one_hot_logits([1, 0, 2, 2, 1], vocab_size=3)
+    assert beam_decode(logits, vocab, beam_width=4) == greedy_decode(logits, vocab)
+
+
+def test_beam_decode_handles_repeated_char_with_blank():
+    vocab = CharVocabulary(chars=("a",))
+    # tokens [1, 0, 1] -> "aa" (blank separates the two a's)
+    logits = _one_hot_logits([1, 0, 1], vocab_size=2)
+    assert beam_decode(logits, vocab, beam_width=5) == ["aa"]
+
+
+def test_beam_decode_merges_repeats_without_blank():
+    vocab = CharVocabulary(chars=("a",))
+    # tokens [1, 1, 1] -> "a" (repeats collapse)
+    logits = _one_hot_logits([1, 1, 1], vocab_size=2)
+    assert beam_decode(logits, vocab, beam_width=5) == ["a"]
+
+
+def test_beam_decode_all_blank_is_empty():
+    vocab = CharVocabulary(chars=("a",))
+    logits = _one_hot_logits([0, 0, 0], vocab_size=2)
+    assert beam_decode(logits, vocab, beam_width=3) == [""]
+
+
+def test_beam_decode_batch():
+    vocab = CharVocabulary(chars=("a", "b"))
+    logits = torch.full((2, 3, 3), -10.0)
+    logits[0, 0, 1] = 10.0
+    logits[0, 1, 0] = 10.0
+    logits[0, 2, 2] = 10.0  # "ab"
+    logits[1, 0, 2] = 10.0
+    logits[1, 1, 2] = 10.0
+    logits[1, 2, 1] = 10.0  # "ba"
+    assert beam_decode(logits, vocab, beam_width=4) == ["ab", "ba"]
+
+
+def test_beam_width_one_is_valid():
+    vocab = CharVocabulary(chars=("a",))
+    logits = _one_hot_logits([1, 1, 1], vocab_size=2)
+    assert beam_decode(logits, vocab, beam_width=1) == ["a"]
+
+
+def test_beam_decode_rejects_zero_width():
+    vocab = CharVocabulary(chars=("a",))
+    logits = _one_hot_logits([1], vocab_size=2)
+    with pytest.raises(ValueError):
+        beam_decode(logits, vocab, beam_width=0)
