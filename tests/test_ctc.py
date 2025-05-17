@@ -2,7 +2,12 @@ import pytest
 import torch
 
 from auricle.asr.ctc import CTCHead
-from auricle.asr.decode import beam_decode, collapse_tokens, greedy_decode
+from auricle.asr.decode import (
+    beam_decode,
+    collapse_tokens,
+    greedy_decode,
+    greedy_decode_with_confidence,
+)
 from auricle.asr.vocab import CharVocabulary
 
 
@@ -104,3 +109,29 @@ def test_beam_decode_rejects_zero_width():
     logits = _one_hot_logits([1], vocab_size=2)
     with pytest.raises(ValueError):
         beam_decode(logits, vocab, beam_width=0)
+
+
+def test_decode_with_confidence_sharp_is_high():
+    vocab = CharVocabulary(chars=("a",))
+    logits = _one_hot_logits([1, 1, 1], vocab_size=2, confidence=20.0)
+    ((text, conf),) = greedy_decode_with_confidence(logits, vocab)
+    assert text == "a"
+    assert conf > 0.99
+
+
+def test_decode_with_confidence_flat_is_low():
+    vocab = CharVocabulary(chars=("a", "b"))
+    # Uniform logits -> confidence is exactly 1/vocab_size.
+    logits = torch.zeros(1, 4, 3)
+    ((text, conf),) = greedy_decode_with_confidence(logits, vocab)
+    assert conf == pytest.approx(1.0 / 3.0)
+
+
+def test_decode_with_confidence_text_matches_greedy():
+    vocab = CharVocabulary(chars=("a", "b"))
+    logits = torch.randn(2, 6, 3)
+    texts = greedy_decode(logits, vocab)
+    pairs = greedy_decode_with_confidence(logits, vocab)
+    assert [t for t, _ in pairs] == texts
+    for _, conf in pairs:
+        assert 0.0 <= conf <= 1.0

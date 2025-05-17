@@ -29,6 +29,25 @@ def greedy_decode(logits: torch.Tensor, vocab: CharVocabulary) -> list[str]:
     return [collapse_tokens(row, vocab) for row in best]
 
 
+def greedy_decode_with_confidence(
+    logits: torch.Tensor, vocab: CharVocabulary
+) -> list[tuple[str, float]]:
+    """Greedy decode that also reports mean frame confidence.
+
+    Confidence is the average softmax probability of the argmax token at each
+    frame, in ``[0, 1]`` — a cheap proxy for how decisive the encoder was. A
+    fully blank sequence still averages over frames, so it reflects silence
+    rather than collapsing to zero length.
+    """
+    probs = torch.softmax(logits, dim=-1)
+    best_probs, best = probs.max(dim=-1)
+    results: list[tuple[str, float]] = []
+    for row, prob_row in zip(best, best_probs, strict=False):
+        confidence = float(prob_row.mean()) if prob_row.numel() else 0.0
+        results.append((collapse_tokens(row, vocab), confidence))
+    return results
+
+
 def _logsumexp(a: float, b: float) -> float:
     return float(np.logaddexp(a, b))
 
