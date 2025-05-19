@@ -11,6 +11,40 @@ def test_tiny_config_defaults():
     assert cfg.d_model % cfg.n_heads == 0
 
 
+def test_named_presets_scale_up():
+    tiny, small, base = EncoderConfig.tiny(), EncoderConfig.small(), EncoderConfig.base()
+    assert tiny.d_model < small.d_model < base.d_model
+    assert tiny.n_layers < small.n_layers < base.n_layers
+    for cfg in (tiny, small, base):
+        cfg.validate()  # every shipped preset must be internally consistent
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"d_model": 0},
+        {"n_layers": -1},
+        {"n_heads": 3, "d_model": 64},  # does not divide
+        {"n_heads": 0},
+        {"ff_mult": 0},
+        {"max_frames": 0},
+        {"dropout": 1.0},
+        {"dropout": -0.1},
+        {"n_mels": -80},
+    ],
+)
+def test_config_validate_rejects_bad_values(overrides):
+    cfg = EncoderConfig(**overrides)
+    with pytest.raises(ValueError):
+        cfg.validate()
+
+
+def test_encoder_rejects_invalid_config():
+    cfg = EncoderConfig(d_model=64, n_heads=5)
+    with pytest.raises(ValueError):
+        WhisperStyleEncoder(cfg)
+
+
 def test_config_dict_roundtrip():
     cfg = EncoderConfig.tiny()
     restored = EncoderConfig.from_dict(cfg.to_dict())

@@ -23,6 +23,7 @@ class WhisperStyleEncoder(nn.Module):
 
     def __init__(self, config: EncoderConfig):
         super().__init__()
+        config.validate()
         self.config = config
         self.frontend = ConvFrontend(config.n_mels, config.d_model)
         self.blocks = TransformerEncoder(
