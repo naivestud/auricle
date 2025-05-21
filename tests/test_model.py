@@ -1,5 +1,6 @@
 import torch
 
+from auricle.encoder.config import EncoderConfig
 from auricle.model import AuricleModel
 
 
@@ -7,6 +8,36 @@ def test_tiny_model_constructs():
     model = AuricleModel.tiny()
     assert model.config.d_model == 64
     assert len(model.vocab) == 29
+
+
+def test_count_parameters_positive():
+    model = AuricleModel.tiny()
+    n = model.count_parameters()
+    assert n > 0
+    assert model.count_parameters(trainable_only=False) == n
+
+
+def test_count_parameters_ignores_frozen():
+    model = AuricleModel.tiny()
+    for p in model.head.parameters():
+        p.requires_grad = False
+    assert model.count_parameters(trainable_only=True) < model.count_parameters(
+        trainable_only=False
+    )
+
+
+def test_summary_contains_key_facts():
+    model = AuricleModel.tiny()
+    text = model.summary()
+    assert "d_model=64" in text
+    assert "vocab=29" in text
+    assert "params=" in text
+
+
+def test_larger_config_has_more_parameters():
+    small = AuricleModel(EncoderConfig.small())
+    tiny = AuricleModel.tiny()
+    assert small.count_parameters() > tiny.count_parameters()
 
 
 def test_logits_shape():

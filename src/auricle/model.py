@@ -29,6 +29,19 @@ class AuricleModel(nn.Module):
         """A randomly initialised tiny model, useful for tests and demos."""
         return cls(EncoderConfig.tiny())
 
+    def count_parameters(self, trainable_only: bool = True) -> int:
+        """Total number of scalar parameters, optionally only trainable ones."""
+        return sum(p.numel() for p in self.parameters() if p.requires_grad or not trainable_only)
+
+    def summary(self) -> str:
+        """A one-line description of the architecture and its size."""
+        cfg = self.config
+        return (
+            f"AuricleModel(d_model={cfg.d_model}, n_layers={cfg.n_layers}, "
+            f"n_heads={cfg.n_heads}, n_mels={cfg.n_mels}, "
+            f"vocab={len(self.vocab)}, params={self.count_parameters():,})"
+        )
+
     def forward(self, waveform: torch.Tensor) -> torch.Tensor:
         """Compute CTC logits for ``waveform`` of shape ``(batch, samples)``."""
         if waveform.ndim == 1:
