@@ -92,3 +92,26 @@ def test_streaming_independent_of_push_block_size():
         results.append(asr.finalize())
 
     assert results[0] == results[1] == results[2]
+
+
+def test_stats_track_samples_and_chunks():
+    asr = StreamingASR(FakeModel("x"), chunk_seconds=1.0, overlap_seconds=0.0)
+    assert asr.stats.samples_fed == 0
+    assert asr.stats.real_time_factor is None
+
+    asr.feed(np.zeros(32_000, dtype=np.float32))
+    asr.finalize()
+
+    assert asr.stats.samples_fed == 32_000
+    assert asr.stats.audio_seconds == 2.0
+    assert asr.stats.chunks_decoded == 2
+    assert asr.stats.decode_seconds >= 0.0
+    assert asr.stats.real_time_factor is not None
+
+
+def test_stats_reset_with_stream():
+    asr = StreamingASR(FakeModel("x"), chunk_seconds=1.0, overlap_seconds=0.0)
+    asr.feed(np.zeros(16_000, dtype=np.float32))
+    asr.reset()
+    assert asr.stats.samples_fed == 0
+    assert asr.stats.chunks_decoded == 0

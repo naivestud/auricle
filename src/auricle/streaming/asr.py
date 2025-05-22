@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import time
 from collections.abc import Iterable, Iterator
+from dataclasses import dataclass
 
 import numpy as np
 import torch
@@ -10,6 +12,29 @@ import torch
 from auricle.streaming.merge import merge_transcripts
 from auricle.streaming.scheduler import StreamScheduler
 from auricle.types import ModelLike
+
+
+@dataclass(slots=True)
+class StreamStats:
+    """Counters describing the work a :class:`StreamingASR` has done."""
+
+    samples_fed: int = 0
+    chunks_decoded: int = 0
+    decode_seconds: float = 0.0
+
+    @property
+    def audio_seconds(self) -> float:
+        return self.samples_fed / 16_000.0
+
+    @property
+    def real_time_factor(self) -> float | None:
+        """Decode time over audio duration; ``None`` before any audio is fed.
+
+        Values below 1.0 mean decoding runs faster than real time.
+        """
+        if self.samples_fed == 0:
+            return None
+        return self.decode_seconds / self.audio_seconds
 
 
 class StreamingASR:
@@ -24,6 +49,7 @@ class StreamingASR:
         self.model = model
         self.scheduler = StreamScheduler(chunk_seconds, overlap_seconds)
         self._committed = ""
+        self.stats = StreamStats()
 
     @property
     def text(self) -> str:
@@ -32,6 +58,7 @@ class StreamingASR:
 
     def feed(self, samples: np.ndarray) -> str:
         """Feed a block of audio and return the committed transcript."""
+        self.stats.samples_fed += int(len(samples))
         for chunk in self.scheduler.push(samples):
             self._integrate(chunk.samples)
         return self._committed
@@ -52,8 +79,12 @@ class StreamingASR:
     def reset(self) -> None:
         self.scheduler.reset()
         self._committed = ""
+        self.stats = StreamStats()
 
     def _integrate(self, samples: np.ndarray) -> None:
         waveform = torch.from_numpy(np.ascontiguousarray(samples))
+        start = time.perf_counter()
         hypothesis = self.model.transcribe(waveform)[0]
+        self.stats.decode_seconds += time.perf_counter() - start
+        self.stats.chunks_decoded += 1
         self._committed = merge_transcripts(self._committed, hypothesis)
