@@ -82,6 +82,12 @@ def test_evaluate_manifest_end_to_end(model, tmp_path):
     assert report.cer_micro >= 0.0
     assert len(report.per_sample) == 2
     assert {"n_samples", "wer_micro", "cer_micro", "per_sample"} <= set(report.to_dict())
+    # Timing fields are populated and consistent.
+    assert report.total_seconds >= 0.0
+    assert report.audio_seconds == pytest.approx(3.0)  # 1 s tone + 2 s sweep
+    assert all("seconds" in row for row in report.per_sample)
+    assert report.real_time_factor is not None
+    assert report.real_time_factor >= 0.0
 
 
 def test_evaluate_manifest_with_root(model, tmp_path):
