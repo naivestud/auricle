@@ -71,6 +71,22 @@ def test_eval_writes_report(tmp_path, capsys):
     assert "wer_micro" in report
 
 
+def test_info_prints_metadata(capsys):
+    rc = main(["info", str(FIXTURES / "tone_1s.wav")])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "duration:     1.000 s" in out
+    assert "sample rate:  16000 Hz" in out
+    assert "bit depth:    16" in out
+    assert "acoustics:" in out
+
+
+def test_info_missing_file_exits_nonzero(capsys):
+    rc = main(["info", "/does/not/exist.wav"])
+    assert rc == 2
+    assert "no such file" in capsys.readouterr().err
+
+
 def test_transcribe_missing_file_exits_nonzero(capsys):
     rc = main(["transcribe", "/does/not/exist.wav"])
     assert rc == 2

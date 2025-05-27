@@ -58,6 +58,9 @@ def build_parser() -> argparse.ArgumentParser:
     eval_parser.add_argument("--out", help="write the JSON report here (default: stdout)")
     add_model_args(eval_parser)
 
+    info = subparsers.add_parser("info", help="print WAV metadata and an acoustic summary")
+    info.add_argument("audio", help="path to a WAV file")
+
     return parser
 
 
@@ -126,6 +129,24 @@ def _run_eval(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_info(args: argparse.Namespace) -> int:
+    from auricle.audio.wav import read_wav, read_wav_info
+    from auricle.constants import SAMPLE_RATE
+    from auricle.pipeline.acoustics import summarize
+
+    info = read_wav_info(args.audio)
+    samples, _ = read_wav(args.audio)
+    acoustic = summarize(samples, SAMPLE_RATE)
+
+    print(f"file:         {args.audio}")
+    print(f"duration:     {info.duration_seconds:.3f} s")
+    print(f"sample rate:  {info.sample_rate} Hz")
+    print(f"channels:     {info.n_channels}")
+    print(f"bit depth:    {info.bit_depth}")
+    print(f"acoustics:    {acoustic.describe()}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -144,6 +165,8 @@ def main(argv: list[str] | None = None) -> int:
             return _run_ask(args)
         if args.command == "eval":
             return _run_eval(args)
+        if args.command == "info":
+            return _run_info(args)
     except FileNotFoundError as exc:
         print(f"auricle: no such file: {exc.filename or args}", file=sys.stderr)
         return 2
