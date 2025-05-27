@@ -1,7 +1,7 @@
 import pytest
 
 from auricle.errors import BackendNotFoundError
-from auricle.llm import EchoBackend, available_backends, get_backend
+from auricle.llm import EchoBackend, ScriptedBackend, available_backends, get_backend
 from auricle.llm.base import GenerationResult, LLMBackend
 from auricle.llm.registry import register_backend
 
@@ -57,3 +57,31 @@ def test_custom_backend_roundtrip():
             return GenerationResult(text=prompt.upper(), backend=self.name)
 
     assert get_backend("shout").generate("hi").text == "HI"
+
+
+def test_scripted_returns_responses_in_order():
+    backend = ScriptedBackend(responses=["first", "second"])
+    assert backend.generate("a").text == "first"
+    assert backend.generate("b").text == "second"
+    assert backend.calls == 2
+
+
+def test_scripted_cycles_by_default():
+    backend = ScriptedBackend(responses=["x", "y"])
+    assert [backend.generate("p").text for _ in range(4)] == ["x", "y", "x", "y"]
+
+
+def test_scripted_repeats_last_when_not_cycling():
+    backend = ScriptedBackend(responses=["x", "y"], cycle=False)
+    assert [backend.generate("p").text for _ in range(3)] == ["x", "y", "y"]
+
+
+def test_scripted_empty_script_is_empty_string():
+    backend = ScriptedBackend()
+    assert backend.generate("hi").text == ""
+
+
+def test_scripted_registered_and_constructible():
+    assert "scripted" in available_backends()
+    backend = get_backend("scripted", responses=["only"])
+    assert backend.generate("q").text == "only"
