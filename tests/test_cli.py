@@ -23,6 +23,14 @@ def test_transcribe_fixture(capsys):
     assert isinstance(out, str)
 
 
+def test_transcribe_json_output(capsys):
+    rc = main(["transcribe", str(FIXTURES / "tone_1s.wav"), "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["audio"].endswith("tone_1s.wav")
+    assert isinstance(payload["text"], str)
+
+
 def test_stream_fixture(capsys):
     rc = main(
         [

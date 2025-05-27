@@ -32,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     transcribe = subparsers.add_parser("transcribe", help="transcribe a WAV file")
     transcribe.add_argument("audio", help="path to a WAV file")
+    transcribe.add_argument("--json", action="store_true", help="emit a JSON object with the text")
     add_model_args(transcribe)
 
     stream = subparsers.add_parser("stream", help="stream a WAV file through the ASR")
@@ -61,10 +62,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _run_transcribe(args: argparse.Namespace) -> int:
+    import json
+
     from auricle.pipeline.asr import transcribe
 
     model = _load_model(args.checkpoint)
-    print(transcribe(model, args.audio))
+    text = transcribe(model, args.audio)
+    if args.json:
+        print(json.dumps({"audio": args.audio, "text": text}))
+    else:
+        print(text)
     return 0
 
 
