@@ -1,6 +1,6 @@
 import pytest
 
-from auricle.eval.metrics import cer, edit_distance, normalize_text, wer
+from auricle.eval.metrics import cer, edit_distance, normalize_text, ser, wer
 
 
 def test_edit_distance_identical():
@@ -69,3 +69,29 @@ def test_wer_lower_bound_is_length_difference():
         hyp = [rng.choice(words) for _ in range(rng.randint(0, 12))]
         error = wer(" ".join(ref), " ".join(hyp))
         assert error >= abs(len(ref) - len(hyp)) / len(ref) - 1e-9
+
+
+def test_ser_all_correct_is_zero():
+    refs = ["the cat sat", "a dog ran"]
+    assert ser(refs, ["the cat sat", "a dog ran"]) == 0.0
+
+
+def test_ser_counts_any_error_equally():
+    refs = ["the cat sat", "a dog ran"]
+    # One-word substitution in the first, fully wrong second -> 1.0.
+    assert ser(refs, ["the cat sat", "completely different"]) == pytest.approx(0.5)
+    assert ser(refs, ["the dog sat", "a dog ran"]) == pytest.approx(0.5)
+
+
+def test_ser_is_case_and_punct_insensitive():
+    assert ser(["Hello, world."], ["hello world"]) == 0.0
+
+
+def test_ser_rejects_mismatched_lengths():
+    with pytest.raises(ValueError):
+        ser(["a"], ["a", "b"])
+
+
+def test_ser_rejects_empty():
+    with pytest.raises(ValueError):
+        ser([], [])

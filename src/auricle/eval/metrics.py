@@ -68,3 +68,21 @@ def cer(reference: str, hypothesis: str) -> float:
     """Character error rate, ignoring spaces after normalisation."""
     distance, length = _score_chars(reference, hypothesis)
     return distance / length
+
+
+def ser(references: list[str], hypotheses: list[str]) -> float:
+    """Sentence error rate: fraction of utterances with any word error.
+
+    Unlike WER, a single-word mistake weighs the same as a fully garbled
+    sentence, which is useful when whole-utterance correctness matters more
+    than edit count. Raises ``ValueError`` on length mismatch or empty input.
+    """
+    if len(references) != len(hypotheses):
+        raise ValueError(
+            f"need equal-length lists, got {len(references)} references "
+            f"and {len(hypotheses)} hypotheses"
+        )
+    if not references:
+        raise ValueError("ser() requires at least one sentence pair")
+    wrong = sum(1 for ref, hyp in zip(references, hypotheses, strict=True) if wer(ref, hyp) > 0.0)
+    return wrong / len(references)
