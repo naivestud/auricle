@@ -26,6 +26,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command")
 
     subparsers.add_parser("version", help="print the version and exit")
+    subparsers.add_parser("backends", help="list registered LLM backends")
 
     def add_model_args(sub):
         sub.add_argument("--checkpoint", help="checkpoint directory to load weights from")
@@ -154,6 +155,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "version":
             print(__version__)
+            return 0
+        if args.command == "backends":
+            from auricle.llm import available_backends
+
+            for name in available_backends():
+                print(name)
             return 0
         if args.command == "transcribe":
             return _run_transcribe(args)

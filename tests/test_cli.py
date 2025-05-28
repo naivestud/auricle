@@ -11,6 +11,14 @@ def test_version(capsys):
     assert capsys.readouterr().out.strip()
 
 
+def test_backends_lists_registered(capsys):
+    assert main(["backends"]) == 0
+    names = capsys.readouterr().out.split()
+    assert "echo" in names
+    assert "openai" in names
+    assert "scripted" in names
+
+
 def test_no_args_prints_help(capsys):
     assert main([]) == 0
     assert "usage: auricle" in capsys.readouterr().out.lower()
