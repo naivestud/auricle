@@ -1,7 +1,13 @@
 import pytest
 
 from auricle.errors import BackendNotFoundError
-from auricle.llm import EchoBackend, ScriptedBackend, available_backends, get_backend
+from auricle.llm import (
+    CachingBackend,
+    EchoBackend,
+    ScriptedBackend,
+    available_backends,
+    get_backend,
+)
 from auricle.llm.base import GenerationResult, LLMBackend
 from auricle.llm.registry import register_backend
 
@@ -85,3 +91,36 @@ def test_scripted_registered_and_constructible():
     assert "scripted" in available_backends()
     backend = get_backend("scripted", responses=["only"])
     assert backend.generate("q").text == "only"
+
+
+def test_caching_reuses_response_for_same_prompt():
+    inner = ScriptedBackend(responses=["a", "b", "c"])
+    cached = CachingBackend(inner)
+    assert cached.generate("same").text == "a"
+    assert cached.generate("same").text == "a"  # served from cache
+    assert cached.hits == 1
+    assert inner.calls == 1
+
+
+def test_caching_keys_include_max_new_tokens():
+    inner = ScriptedBackend(responses=["short", "longer"])
+    cached = CachingBackend(inner)
+    assert cached.generate("p", max_new_tokens=8).text == "short"
+    assert cached.generate("p", max_new_tokens=16).text == "longer"
+    assert cached.cache_size == 2
+
+
+def test_caching_mirrors_wrapped_name():
+    cached = CachingBackend(EchoBackend())
+    assert cached.name == "echo"
+
+
+def test_caching_clear_resets():
+    cached = CachingBackend(ScriptedBackend(responses=["x", "y"]))
+    cached.generate("p")
+    cached.generate("p")
+    assert cached.hits == 1
+    cached.clear()
+    assert cached.cache_size == 0
+    assert cached.hits == 0
+    assert cached.generate("p").text == "y"
