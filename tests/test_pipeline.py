@@ -6,7 +6,12 @@ import torch
 
 from auricle.errors import SampleRateError
 from auricle.model import AuricleModel
-from auricle.pipeline.asr import resample_linear, to_waveform, transcribe
+from auricle.pipeline.asr import (
+    resample_linear,
+    to_waveform,
+    transcribe,
+    transcribe_with_confidence,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -60,3 +65,25 @@ def test_resample_linear_length():
 
 def test_resample_linear_empty():
     assert resample_linear(np.zeros(0, dtype=np.float32), 8_000, 16_000).shape == (0,)
+
+
+def test_transcribe_with_confidence_returns_bounded_score(model):
+    text, confidence = transcribe_with_confidence(model, FIXTURES / "tone_1s.wav")
+    assert text == transcribe(model, FIXTURES / "tone_1s.wav")
+    assert 0.0 <= confidence <= 1.0
+
+
+def test_transcribe_with_confidence_accepts_array(model):
+    samples = np.zeros(8_000, dtype=np.float32)
+    text, confidence = transcribe_with_confidence(model, samples, sample_rate=16_000)
+    assert isinstance(text, str)
+    assert 0.0 <= confidence <= 1.0
+
+
+def test_model_transcribe_with_confidence_batch():
+    torch.manual_seed(3)
+    model = AuricleModel.tiny()
+    pairs = model.transcribe_with_confidence(torch.randn(2, 4_000))
+    assert len(pairs) == 2
+    texts = model.transcribe(torch.randn(2, 4_000))
+    assert len(texts) == len(pairs)

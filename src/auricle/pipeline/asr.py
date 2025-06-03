@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import torch
@@ -13,7 +14,16 @@ from auricle.constants import SAMPLE_RATE
 from auricle.errors import SampleRateError
 from auricle.types import ModelLike
 
-__all__ = ["resample_linear", "to_waveform", "transcribe", "transcribe_waveform"]
+if TYPE_CHECKING:
+    from auricle.model import AuricleModel
+
+__all__ = [
+    "resample_linear",
+    "to_waveform",
+    "transcribe",
+    "transcribe_waveform",
+    "transcribe_with_confidence",
+]
 
 
 def transcribe_waveform(model: ModelLike, waveform: torch.Tensor) -> str:
@@ -57,3 +67,19 @@ def transcribe(
     """Transcribe a whole utterance and return the text."""
     waveform = to_waveform(audio, sample_rate)
     return transcribe_waveform(model, waveform)
+
+
+def transcribe_with_confidence(
+    model: AuricleModel,
+    audio: str | Path | np.ndarray | torch.Tensor,
+    sample_rate: int | None = None,
+) -> tuple[str, float]:
+    """Transcribe an utterance and return ``(text, confidence)``.
+
+    Needs a concrete :class:`~auricle.model.AuricleModel` because confidence
+    is read from the CTC logits, which the generic ``ModelLike`` interface
+    does not expose.
+    """
+    waveform = to_waveform(audio, sample_rate)
+    text, confidence = model.transcribe_with_confidence(waveform)[0]
+    return text.strip(), confidence

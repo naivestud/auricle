@@ -6,7 +6,7 @@ import torch
 from torch import nn
 
 from auricle.asr.ctc import CTCHead
-from auricle.asr.decode import greedy_decode
+from auricle.asr.decode import greedy_decode, greedy_decode_with_confidence
 from auricle.asr.vocab import CharVocabulary
 from auricle.audio.spectrogram import LogMelSpectrogram
 from auricle.encoder.config import EncoderConfig
@@ -62,5 +62,16 @@ class AuricleModel(nn.Module):
         try:
             logits = self.forward(waveform)
             return greedy_decode(logits, self.vocab)
+        finally:
+            self.train(was_training)
+
+    @torch.no_grad()
+    def transcribe_with_confidence(self, waveform: torch.Tensor) -> list[tuple[str, float]]:
+        """Greedy-decode ``waveform`` into ``(transcript, confidence)`` pairs."""
+        was_training = self.training
+        self.eval()
+        try:
+            logits = self.forward(waveform)
+            return greedy_decode_with_confidence(logits, self.vocab)
         finally:
             self.train(was_training)
