@@ -57,3 +57,53 @@ def test_backend_registered_under_openai():
 
     backend = get_backend("openai", model="m")
     assert isinstance(backend, OpenAICompatBackend)
+
+
+def _flaky_transport(failures: int, response: dict):
+    calls = {"n": 0}
+
+    def transport(url, payload, headers, timeout):
+        calls["n"] += 1
+        if calls["n"] <= failures:
+            raise BackendError("transient failure")
+        return response
+
+    return transport, calls
+
+
+def test_retry_recovers_from_transient_errors():
+    ok = {"choices": [{"message": {"content": "recovered"}}]}
+    transport, calls = _flaky_transport(failures=2, response=ok)
+    sleeps: list[float] = []
+    backend = OpenAICompatBackend(
+        model="m", transport=transport, max_retries=3, backoff_seconds=0.5, sleep=sleeps.append
+    )
+    result = backend.generate("hi")
+    assert result.text == "recovered"
+    assert calls["n"] == 3  # two failures + one success
+    assert sleeps == [0.5, 1.0]  # exponential backoff
+
+
+def test_retry_exhausted_raises():
+    ok = {"choices": [{"message": {"content": "x"}}]}
+    transport, calls = _flaky_transport(failures=10, response=ok)
+    backend = OpenAICompatBackend(
+        model="m", transport=transport, max_retries=2, sleep=lambda _: None
+    )
+    with pytest.raises(BackendError, match="transient"):
+        backend.generate("hi")
+    assert calls["n"] == 3  # initial + 2 retries
+
+
+def test_no_retry_by_default():
+    ok = {"choices": [{"message": {"content": "x"}}]}
+    transport, calls = _flaky_transport(failures=10, response=ok)
+    backend = OpenAICompatBackend(model="m", transport=transport)
+    with pytest.raises(BackendError):
+        backend.generate("hi")
+    assert calls["n"] == 1
+
+
+def test_rejects_negative_retries():
+    with pytest.raises(ValueError):
+        OpenAICompatBackend(model="m", max_retries=-1)
