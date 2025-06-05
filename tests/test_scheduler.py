@@ -67,3 +67,25 @@ def test_reset_clears_state():
     sched.reset()
     assert len(sched) == 0
     assert sched.flush() is None
+
+
+def test_pending_seconds_tracks_buffer():
+    sched = StreamScheduler(chunk_seconds=1.0, overlap_seconds=0.0)
+    assert sched.pending_seconds == 0.0
+    sched.push(np.zeros(8_000, dtype=np.float32))
+    assert sched.pending_seconds == pytest.approx(0.5)
+    sched.push(np.zeros(8_000, dtype=np.float32))  # emits one full chunk
+    assert sched.pending_seconds == 0.0
+
+
+def test_samples_emitted_advances():
+    sched = StreamScheduler(chunk_seconds=1.0, overlap_seconds=0.25)
+    assert sched.samples_emitted == 0
+    sched.push(np.zeros(32_000, dtype=np.float32))
+    assert sched.samples_emitted == 2 * sched.step_samples
+
+
+def test_repr_mentions_buffered():
+    sched = StreamScheduler(chunk_seconds=1.0, overlap_seconds=0.0)
+    sched.push(np.zeros(4_000, dtype=np.float32))
+    assert "buffered=4000" in repr(sched)

@@ -47,6 +47,22 @@ class StreamScheduler:
     def __len__(self) -> int:
         return len(self._buffer)
 
+    def __repr__(self) -> str:
+        return (
+            f"<StreamScheduler chunk={self.chunk_samples} "
+            f"overlap={self.overlap_samples} buffered={len(self._buffer)}>"
+        )
+
+    @property
+    def pending_seconds(self) -> float:
+        """Seconds of audio buffered but not yet emitted as a chunk."""
+        return len(self._buffer) / self.sample_rate
+
+    @property
+    def samples_emitted(self) -> int:
+        """Absolute sample offset of the next chunk's start."""
+        return self._emitted
+
     def push(self, samples: np.ndarray) -> list[StreamChunk]:
         """Feed samples and return every chunk that becomes ready."""
         self._buffer = np.concatenate([self._buffer, np.asarray(samples, dtype=np.float32)])
