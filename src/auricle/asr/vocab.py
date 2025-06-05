@@ -29,17 +29,35 @@ class CharVocabulary:
     def size(self) -> int:
         return len(self)
 
+    @property
+    def blank_id(self) -> int:
+        """Token id of the CTC blank symbol."""
+        return self.BLANK
+
+    def can_encode(self, text: str) -> bool:
+        """True if every character of ``text`` is in the vocabulary."""
+        return all(ch in self._char_to_id for ch in text)
+
     def encode(self, text: str) -> list[int]:
         """Encode text into token ids.
 
-        Raises ``ValueError`` on characters outside the vocabulary.
+        Raises ``ValueError`` naming the first character outside the
+        vocabulary and its position.
         """
         ids: list[int] = []
-        for ch in text:
+        for i, ch in enumerate(text):
             if ch not in self._char_to_id:
-                raise ValueError(f"character {ch!r} is not in the vocabulary")
+                raise ValueError(f"character {ch!r} at position {i} is not in the vocabulary")
             ids.append(self._char_to_id[ch])
         return ids
+
+    def encode_lenient(self, text: str) -> list[int]:
+        """Encode ``text``, silently dropping characters outside the vocabulary.
+
+        Useful for preparing imperfect reference text for loss computation or
+        for sanitising arbitrary input before decoding round-trips.
+        """
+        return [self._char_to_id[ch] for ch in text if ch in self._char_to_id]
 
     def decode(self, ids: Iterable[int]) -> str:
         """Decode token ids back to text, ignoring blank tokens."""

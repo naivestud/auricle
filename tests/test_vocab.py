@@ -47,3 +47,32 @@ def test_custom_chars():
     vocab = CharVocabulary(chars=("x", "y"))
     assert vocab.size == 3
     assert vocab.decode(vocab.encode("xy")) == "xy"
+
+
+def test_blank_id_alias():
+    assert CharVocabulary().blank_id == CharVocabulary.BLANK == 0
+
+
+def test_can_encode():
+    vocab = CharVocabulary()
+    assert vocab.can_encode("hello world")
+    assert not vocab.can_encode("hello!")
+    assert vocab.can_encode("")  # vacuously true
+
+
+def test_encode_error_reports_position():
+    vocab = CharVocabulary()
+    with pytest.raises(ValueError, match="position 5"):
+        vocab.encode("hello!")
+
+
+def test_encode_lenient_drops_unknown():
+    vocab = CharVocabulary()
+    ids = vocab.encode_lenient("Hey, there!")
+    # Uppercase, comma and '!' are dropped; the rest round-trips.
+    assert vocab.decode(ids) == "ey there"
+
+
+def test_encode_lenient_all_unknown_is_empty():
+    vocab = CharVocabulary()
+    assert vocab.encode_lenient("!!!") == []
