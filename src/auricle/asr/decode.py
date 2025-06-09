@@ -13,14 +13,19 @@ _NEG_INF = float("-inf")
 
 
 def collapse_tokens(tokens: torch.Tensor, vocab: CharVocabulary) -> str:
-    """Collapse a 1-D token sequence: merge repeats, drop blanks, map to text."""
-    out: list[int] = []
-    prev = None
-    for token in tokens.tolist():
-        if token != prev and token != vocab.BLANK:
-            out.append(token)
-        prev = token
-    return vocab.decode(out)
+    """Collapse a 1-D token sequence: merge repeats, drop blanks, map to text.
+
+    Implemented with tensor ops rather than a per-token Python loop so long
+    sequences collapse in vectorised time.
+    """
+    if tokens.numel() == 0:
+        return ""
+    # prev[i] is the preceding token; the first position uses a sentinel that
+    # cannot equal any real token so it always counts as a change.
+    prev = torch.roll(tokens, 1)
+    prev[0] = -1
+    kept = (tokens != prev) & (tokens != vocab.BLANK)
+    return vocab.decode(tokens[kept].tolist())
 
 
 def greedy_decode(logits: torch.Tensor, vocab: CharVocabulary) -> list[str]:
