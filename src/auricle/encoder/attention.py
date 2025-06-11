@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
-import math
-
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 
 class MultiHeadAttention(nn.Module):
-    """Standard scaled dot-product multi-head self-attention."""
+    """Standard scaled dot-product multi-head self-attention.
+
+    The core dot-product/softmax/value step delegates to
+    :func:`torch.nn.functional.scaled_dot_product_attention`, which fuses the
+    matmuls and can pick a fast backend, rather than materialising the full
+    ``time x time`` score matrix in Python.
+    """
 
     def __init__(self, d_model: int, n_heads: int):
         super().__init__()
@@ -35,7 +40,6 @@ class MultiHeadAttention(nn.Module):
         k = self._split_heads(self.k_proj(x))
         v = self._split_heads(self.v_proj(x))
 
-        scores = q @ k.transpose(-2, -1) / math.sqrt(self.head_dim)
-        attn = torch.softmax(scores, dim=-1)
-        y = (attn @ v).transpose(1, 2).reshape(b, t, c)
+        y = F.scaled_dot_product_attention(q, k, v)
+        y = y.transpose(1, 2).reshape(b, t, c)
         return self.out_proj(y)
