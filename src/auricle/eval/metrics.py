@@ -5,6 +5,8 @@ from __future__ import annotations
 import string
 from collections.abc import Sequence
 
+import numpy as np
+
 _PUNCTUATION = str.maketrans("", "", string.punctuation.replace("'", ""))
 
 
@@ -18,24 +20,33 @@ def normalize_text(text: str) -> str:
 
 
 def edit_distance(reference: Sequence, hypothesis: Sequence) -> int:
-    """Levenshtein distance between two sequences."""
+    """Levenshtein distance between two sequences.
+
+    Identical and empty inputs short-circuit, and the row updates are
+    vectorised with numpy, which is noticeably faster than a pure-Python
+    double loop on transcript-length sequences.
+    """
+    if reference == hypothesis:
+        return 0
     if len(reference) < len(hypothesis):
         reference, hypothesis = hypothesis, reference
+    n = len(hypothesis)
+    if n == 0:
+        return len(reference)
 
-    previous = list(range(len(hypothesis) + 1))
+    hyp = np.asarray(list(hypothesis))
+    positions = np.arange(n + 1, dtype=np.int64)
+    previous = positions.copy()
     for i, ref_item in enumerate(reference, start=1):
-        current = [i]
-        for j, hyp_item in enumerate(hypothesis, start=1):
-            cost = 0 if ref_item == hyp_item else 1
-            current.append(
-                min(
-                    previous[j] + 1,  # deletion
-                    current[j - 1] + 1,  # insertion
-                    previous[j - 1] + cost,  # substitution
-                )
-            )
-        previous = current
-    return previous[-1]
+        cost = (hyp != ref_item).astype(np.int64)
+        # Deletion vs substitution for positions 1..n; position 0 costs i.
+        base = np.minimum(previous[:-1] + cost, previous[1:] + 1)
+        base_ext = np.concatenate((np.array([i], dtype=np.int64), base))
+        # Insertion propagates left-to-right; resolve the recurrence with a
+        # prefix minimum of (base - position), then add the position back.
+        prefix = np.minimum.accumulate(base_ext - positions)
+        previous = positions + prefix
+    return int(previous[-1])
 
 
 def _score_words(reference: str, hypothesis: str) -> tuple[int, int]:
