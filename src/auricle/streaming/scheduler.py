@@ -41,36 +41,54 @@ class StreamScheduler:
         self.chunk_samples = int(chunk_seconds * sample_rate)
         self.overlap_samples = int(overlap_seconds * sample_rate)
         self.step_samples = self.chunk_samples - self.overlap_samples
-        self._buffer = np.zeros(0, dtype=np.float32)
+        # A growable buffer with a write cursor. Pre-allocating and appending
+        # in place avoids re-copying the whole backlog on every push, which a
+        # naive ``np.concatenate`` would do.
+        self._buffer = np.zeros(self.chunk_samples, dtype=np.float32)
+        self._n = 0
         self._emitted = 0
 
     def __len__(self) -> int:
-        return len(self._buffer)
+        return self._n
 
     def __repr__(self) -> str:
         return (
             f"<StreamScheduler chunk={self.chunk_samples} "
-            f"overlap={self.overlap_samples} buffered={len(self._buffer)}>"
+            f"overlap={self.overlap_samples} buffered={self._n}>"
         )
 
     @property
     def pending_seconds(self) -> float:
         """Seconds of audio buffered but not yet emitted as a chunk."""
-        return len(self._buffer) / self.sample_rate
+        return self._n / self.sample_rate
 
     @property
     def samples_emitted(self) -> int:
         """Absolute sample offset of the next chunk's start."""
         return self._emitted
 
+    def _ensure_capacity(self, needed: int) -> None:
+        if needed <= len(self._buffer):
+            return
+        capacity = max(needed, 2 * len(self._buffer))
+        grown = np.zeros(capacity, dtype=np.float32)
+        grown[: self._n] = self._buffer[: self._n]
+        self._buffer = grown
+
     def push(self, samples: np.ndarray) -> list[StreamChunk]:
         """Feed samples and return every chunk that becomes ready."""
-        self._buffer = np.concatenate([self._buffer, np.asarray(samples, dtype=np.float32)])
+        samples = np.asarray(samples, dtype=np.float32)
+        self._ensure_capacity(self._n + samples.size)
+        self._buffer[self._n : self._n + samples.size] = samples
+        self._n += samples.size
+
         chunks: list[StreamChunk] = []
-        while len(self._buffer) >= self.chunk_samples:
-            chunk = self._buffer[: self.chunk_samples]
-            chunks.append(StreamChunk(chunk.copy(), self._emitted))
-            self._buffer = self._buffer[self.step_samples :]
+        while self._n >= self.chunk_samples:
+            chunks.append(StreamChunk(self._buffer[: self.chunk_samples].copy(), self._emitted))
+            # Slide the not-yet-emitted tail to the front of the buffer.
+            remaining = self._n - self.step_samples
+            self._buffer[:remaining] = self._buffer[self.step_samples : self._n]
+            self._n = remaining
             self._emitted += self.step_samples
         return chunks
 
@@ -81,12 +99,12 @@ class StreamScheduler:
         contained in the previous chunk, so re-decoding it would only repeat
         text; in that case nothing is emitted.
         """
-        if len(self._buffer) == 0 or len(self._buffer) <= self.overlap_samples:
+        if self._n == 0 or self._n <= self.overlap_samples:
             return None
-        chunk = StreamChunk(self._buffer.copy(), self._emitted)
-        self._buffer = np.zeros(0, dtype=np.float32)
+        chunk = StreamChunk(self._buffer[: self._n].copy(), self._emitted)
+        self._n = 0
         return chunk
 
     def reset(self) -> None:
-        self._buffer = np.zeros(0, dtype=np.float32)
+        self._n = 0
         self._emitted = 0
