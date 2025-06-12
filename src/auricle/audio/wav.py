@@ -74,11 +74,17 @@ def read_wav(path: str | Path) -> tuple[np.ndarray, int]:
 
 
 def write_wav(path: str | Path, samples: np.ndarray, sample_rate: int) -> None:
-    """Write mono float32 samples in ``[-1, 1]`` as a 16-bit PCM WAV file."""
+    """Write mono float32 samples in ``[-1, 1]`` as a 16-bit PCM WAV file.
+
+    Raises ``AudioFormatError`` on multi-channel input or non-finite samples,
+    since NaN/inf would silently become arbitrary PCM when cast to int16.
+    """
     path = Path(path)
     samples = np.asarray(samples, dtype=np.float32)
     if samples.ndim != 1:
         raise AudioFormatError(f"write_wav expects mono audio, got shape {samples.shape}")
+    if not np.isfinite(samples).all():
+        raise AudioFormatError("write_wav received non-finite samples (NaN or inf)")
 
     pcm = np.clip(samples * 32768.0, -32768.0, 32767.0).astype(np.int16)
     with wave.open(str(path), "wb") as wf:

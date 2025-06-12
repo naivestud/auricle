@@ -111,3 +111,15 @@ def test_read_wav_info_empty_file(tmp_path):
     assert info.n_frames == 0
     assert info.duration_seconds == 0.0
     assert info.sample_rate == 8_000
+
+
+def test_write_rejects_nan(tmp_path):
+    bad = np.array([0.1, float("nan"), 0.2], dtype=np.float32)
+    with pytest.raises(AudioFormatError, match="non-finite"):
+        write_wav(tmp_path / "nan.wav", bad, 16_000)
+
+
+def test_write_rejects_inf(tmp_path):
+    bad = np.array([0.1, float("inf")], dtype=np.float32)
+    with pytest.raises(AudioFormatError, match="non-finite"):
+        write_wav(tmp_path / "inf.wav", bad, 16_000)
