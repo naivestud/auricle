@@ -54,3 +54,34 @@ def test_overlap_chunks_rejects_bad_args(chunk, overlap):
 def test_chunk_take():
     samples = np.arange(10)
     assert np.array_equal(Chunk(2, 5).take(samples), np.array([2, 3, 4]))
+
+
+def test_chunk_length():
+    assert Chunk(3, 10).length == 7
+
+
+def test_frame_starts_hop_larger_than_frame():
+    # Non-overlapping windows with gaps between them.
+    assert frame_starts(20, frame=4, hop=10) == [0, 10]
+
+
+def test_frame_starts_exact_fit():
+    assert frame_starts(8, frame=4, hop=4) == [0, 4]
+
+
+def test_overlap_chunks_share_overlap_samples():
+    chunks = overlap_chunks(100, chunk=40, overlap=10)
+    for prev, nxt in zip(chunks, chunks[1:], strict=False):
+        # Each pair of neighbours shares exactly `overlap` samples.
+        assert prev.end - nxt.start == 10
+
+
+def test_overlap_chunks_step_is_chunk_minus_overlap():
+    chunks = overlap_chunks(200, chunk=50, overlap=20)
+    starts = [c.start for c in chunks]
+    assert all(b - a == 30 for a, b in zip(starts, starts[1:], strict=False))
+
+
+def test_overlap_chunks_last_is_short():
+    chunks = overlap_chunks(55, chunk=30, overlap=0)
+    assert chunks[-1].length == 25
