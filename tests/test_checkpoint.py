@@ -68,3 +68,33 @@ def test_load_partial_config_fills_defaults(tmp_path):
     restored = load_checkpoint(directory)
     assert restored.config.ff_mult == 4
     assert restored.config.dropout == 0.0
+
+
+def test_save_writes_format_version(tmp_path):
+    torch.manual_seed(5)
+    model = AuricleModel.tiny()
+    directory = save_checkpoint(model, tmp_path / "ckpt")
+    payload = torch.load(directory / "model.pt", weights_only=True)
+    assert payload["format_version"] == 1
+
+
+def test_load_legacy_checkpoint_without_version(tmp_path):
+    # A payload missing format_version is treated as v1 and still loads.
+    torch.manual_seed(6)
+    model = AuricleModel.tiny()
+    directory = save_checkpoint(model, tmp_path / "ckpt")
+    payload = torch.load(directory / "model.pt", weights_only=True)
+    payload.pop("format_version")
+    torch.save(payload, directory / "model.pt")
+    assert load_checkpoint(directory).config == model.config
+
+
+def test_load_rejects_newer_format(tmp_path):
+    torch.manual_seed(7)
+    model = AuricleModel.tiny()
+    directory = save_checkpoint(model, tmp_path / "ckpt")
+    payload = torch.load(directory / "model.pt", weights_only=True)
+    payload["format_version"] = 99
+    torch.save(payload, directory / "model.pt")
+    with pytest.raises(CheckpointError, match="newer than supported"):
+        load_checkpoint(directory)

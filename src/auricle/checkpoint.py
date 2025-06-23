@@ -23,6 +23,9 @@ if TYPE_CHECKING:
 CONFIG_NAME = "config.json"
 WEIGHTS_NAME = "model.pt"
 
+FORMAT_VERSION = 1
+"""Checkpoint layout version, written into the payload for forward migration."""
+
 
 def save_checkpoint(model: ModelLike, directory: str | Path) -> Path:
     """Write ``model`` into ``directory`` (created if missing)."""
@@ -33,6 +36,7 @@ def save_checkpoint(model: ModelLike, directory: str | Path) -> Path:
     (directory / CONFIG_NAME).write_text(config_text + "\n")
 
     payload = {
+        "format_version": FORMAT_VERSION,
         "state_dict": model.state_dict(),
         "vocab": list(model.vocab.chars),
     }
@@ -61,6 +65,13 @@ def load_checkpoint(directory: str | Path, map_location: str = "cpu") -> Auricle
         payload = torch.load(weights_path, map_location=map_location, weights_only=True)
     except Exception as exc:  # torch raises several error types across versions
         raise CheckpointError(f"could not load weights from {weights_path}: {exc}") from exc
+
+    # Checkpoints written before format_version existed are treated as v1.
+    version = payload.get("format_version", 1)
+    if version > FORMAT_VERSION:
+        raise CheckpointError(
+            f"checkpoint format v{version} is newer than supported v{FORMAT_VERSION}"
+        )
 
     chars = payload.get("vocab")
     vocab = CharVocabulary(tuple(chars)) if chars else CharVocabulary()
