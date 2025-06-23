@@ -135,3 +135,41 @@ def test_decode_with_confidence_text_matches_greedy():
     assert [t for t, _ in pairs] == texts
     for _, conf in pairs:
         assert 0.0 <= conf <= 1.0
+
+
+def test_collapse_empty_tokens():
+    vocab = CharVocabulary(chars=("a",))
+    assert collapse_tokens(torch.tensor([], dtype=torch.long), vocab) == ""
+
+
+def test_greedy_decode_empty_time():
+    vocab = CharVocabulary(chars=("a",))
+    logits = torch.zeros(1, 0, 2)
+    assert greedy_decode(logits, vocab) == [""]
+
+
+def test_beam_decode_empty_time():
+    vocab = CharVocabulary(chars=("a",))
+    logits = torch.zeros(1, 0, 2)
+    assert beam_decode(logits, vocab, beam_width=2) == [""]
+
+
+def test_greedy_decode_single_frame():
+    vocab = CharVocabulary(chars=("a",))
+    logits = torch.full((1, 1, 2), -5.0)
+    logits[0, 0, 1] = 5.0
+    assert greedy_decode(logits, vocab) == ["a"]
+
+
+def test_beam_matches_greedy_on_random_logits():
+    # With random but well-formed logits, a wide beam must at least match the
+    # greedy path's alignment probability, so it should never crash and should
+    # return one string per batch item.
+    torch.manual_seed(0)
+    vocab = CharVocabulary(chars=("a", "b", "c"))
+    logits = torch.randn(3, 10, 4)
+    beams = beam_decode(logits, vocab, beam_width=8)
+    greedies = greedy_decode(logits, vocab)
+    assert len(beams) == len(greedies) == 3
+    for text in beams:
+        assert vocab.can_encode(text)
