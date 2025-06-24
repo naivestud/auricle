@@ -36,6 +36,37 @@ def test_summarize_empty():
     assert summary == AcousticSummary(0.0, 0.0, 0.0, 0.0, 0.0)
 
 
+def test_summarize_single_sample():
+    import numpy as np
+
+    summary = summarize(np.array([0.5], dtype=np.float32), 16_000)
+    assert summary.duration_seconds == pytest.approx(1 / 16_000)
+    assert summary.rms == pytest.approx(0.5)
+    assert summary.peak == pytest.approx(0.5)
+    assert summary.zero_crossing_rate == 0.0  # no pair to compare
+
+
+def test_summarize_full_scale_sine_rms():
+    import numpy as np
+
+    t = np.arange(16_000) / 16_000.0
+    full = np.sin(2 * np.pi * 440.0 * t).astype(np.float32)
+    summary = summarize(full, 16_000)
+    # RMS of a unit sine is 1/sqrt(2).
+    assert summary.rms == pytest.approx(2**-0.5, rel=1e-2)
+    assert summary.peak == pytest.approx(1.0, rel=1e-2)
+
+
+def test_describe_contains_every_field():
+    summary = AcousticSummary(1.5, 0.25, 0.9, 0.1, 1200.0)
+    text = summary.describe()
+    assert "duration=1.5s" in text
+    assert "rms=0.250" in text
+    assert "peak=0.900" in text
+    assert "zcr=0.100" in text
+    assert "centroid~1200Hz" in text
+
+
 def test_build_prompt_handles_empty_transcript():
     prompt = build_caption_prompt("duration=1.0s", "")
     assert "<none>" in prompt
