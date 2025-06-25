@@ -115,3 +115,43 @@ def test_stats_reset_with_stream():
     asr.reset()
     assert asr.stats.samples_fed == 0
     assert asr.stats.chunks_decoded == 0
+
+
+def test_merge_whitespace_only_hypothesis_keeps_committed():
+    assert merge_transcripts("hello", "   ") == "hello"
+
+
+def test_merge_whitespace_only_committed_returns_hypothesis():
+    assert merge_transcripts("   ", "hello") == "hello"
+
+
+def test_merge_custom_window_detects_longer_overlap():
+    committed = "one two three four five"
+    hypothesis = "four five six seven"
+    # Default window is plenty here, but shrinking it below 2 misses the overlap.
+    assert merge_transcripts(committed, hypothesis, window=1) == (
+        "one two three four five four five six seven"
+    )
+    assert merge_transcripts(committed, hypothesis, window=5) == "one two three four five six seven"
+
+
+def test_scheduler_push_after_flush_continues():
+    from auricle.streaming.scheduler import StreamScheduler
+
+    sched = StreamScheduler(chunk_seconds=1.0, overlap_seconds=0.0)
+    sched.push(np.zeros(20_000, dtype=np.float32))
+    tail = sched.flush()
+    assert tail is not None
+    end_after_flush = tail.start + len(tail.samples)
+    # Feeding more audio after a flush keeps absolute offsets monotonic.
+    chunks = sched.push(np.zeros(16_000, dtype=np.float32))
+    assert len(chunks) == 1
+    assert chunks[0].start >= end_after_flush - sched.chunk_samples
+
+
+def test_streaming_finalize_is_idempotent():
+    asr = StreamingASR(FakeModel("alpha"), chunk_seconds=1.0, overlap_seconds=0.0)
+    asr.feed(np.zeros(20_000, dtype=np.float32))
+    first = asr.finalize()
+    second = asr.finalize()  # nothing left to flush
+    assert first == second
