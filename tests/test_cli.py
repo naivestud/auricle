@@ -105,3 +105,43 @@ def test_caption_unknown_backend_exits_nonzero(capsys):
     rc = main(["caption", str(FIXTURES / "tone_1s.wav"), "--backend", "nope"])
     assert rc == 2
     assert "auricle:" in capsys.readouterr().err
+
+
+def _save_checkpoint(tmp_path):
+    import torch
+
+    from auricle.checkpoint import save_checkpoint
+    from auricle.model import AuricleModel
+
+    torch.manual_seed(0)
+    return save_checkpoint(AuricleModel.tiny(), tmp_path / "ckpt")
+
+
+def test_transcribe_with_checkpoint(tmp_path, capsys):
+    ckpt = _save_checkpoint(tmp_path)
+    rc = main(["transcribe", str(FIXTURES / "tone_1s.wav"), "--checkpoint", str(ckpt)])
+    assert rc == 0
+    assert isinstance(capsys.readouterr().out, str)
+
+
+def test_stream_with_checkpoint(tmp_path, capsys):
+    ckpt = _save_checkpoint(tmp_path)
+    rc = main(
+        [
+            "stream",
+            str(FIXTURES / "tone_1s.wav"),
+            "--chunk-seconds",
+            "0.5",
+            "--overlap-seconds",
+            "0.1",
+            "--checkpoint",
+            str(ckpt),
+        ]
+    )
+    assert rc == 0
+
+
+def test_checkpoint_missing_dir_exits_nonzero(tmp_path, capsys):
+    rc = main(["transcribe", str(FIXTURES / "tone_1s.wav"), "--checkpoint", str(tmp_path / "nope")])
+    assert rc == 2
+    assert "auricle:" in capsys.readouterr().err
