@@ -6,13 +6,29 @@ machines without any ML stack installed.
 
 from __future__ import annotations
 
+import contextlib
 import wave
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 
 from auricle.errors import AudioFormatError, UnsupportedFormatError
+
+
+@contextlib.contextmanager
+def _open_wave(path: Path) -> Iterator[wave.Wave_read]:
+    """Open ``path`` for reading, mapping wave's own errors onto ours.
+
+    The CLI and eval loops catch :class:`AuricleError`, so letting a raw
+    ``wave.Error`` escape would crash them on a truncated or non-WAV file.
+    """
+    try:
+        with wave.open(str(path), "rb") as wf:
+            yield wf
+    except (wave.Error, EOFError) as exc:
+        raise UnsupportedFormatError(f"not a readable WAV file: {path} ({exc})") from exc
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,7 +55,7 @@ def read_wav_info(path: str | Path) -> WavInfo:
     Much cheaper than :func:`read_wav` when callers only need metadata —
     e.g. building manifests or skipping clips that are too long.
     """
-    with wave.open(str(path), "rb") as wf:
+    with _open_wave(Path(path)) as wf:
         return WavInfo(
             n_channels=wf.getnchannels(),
             sampwidth=wf.getsampwidth(),
@@ -56,7 +72,7 @@ def read_wav(path: str | Path) -> tuple[np.ndarray, int]:
     down to mono.
     """
     path = Path(path)
-    with wave.open(str(path), "rb") as wf:
+    with _open_wave(path) as wf:
         n_channels = wf.getnchannels()
         sampwidth = wf.getsampwidth()
         sample_rate = wf.getframerate()

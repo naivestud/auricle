@@ -123,3 +123,17 @@ def test_write_rejects_inf(tmp_path):
     bad = np.array([0.1, float("inf")], dtype=np.float32)
     with pytest.raises(AudioFormatError, match="non-finite"):
         write_wav(tmp_path / "inf.wav", bad, 16_000)
+
+
+def test_read_non_wav_raises_unsupported(tmp_path):
+    path = tmp_path / "notawav.wav"
+    path.write_bytes(b"this is definitely not a RIFF file")
+    with pytest.raises(UnsupportedFormatError, match="not a readable WAV"):
+        read_wav(path)
+
+
+def test_read_info_non_wav_raises_unsupported(tmp_path):
+    path = tmp_path / "junk.wav"
+    path.write_bytes(b"\x00\x01\x02")
+    with pytest.raises(UnsupportedFormatError):
+        read_wav_info(path)
