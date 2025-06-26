@@ -5,7 +5,7 @@ import pytest
 import torch
 
 from auricle.errors import ManifestError
-from auricle.eval.manifest import load_manifest, save_manifest
+from auricle.eval.manifest import ManifestItem, load_manifest, save_manifest
 from auricle.eval.runner import evaluate_manifest
 from auricle.model import AuricleModel
 
@@ -63,6 +63,35 @@ def test_save_and_reload_roundtrip(tmp_path):
     out = tmp_path / "out.jsonl"
     save_manifest(items, out)
     assert load_manifest(out) == items
+
+
+def test_load_manifest_preserves_order(tmp_path):
+    manifest = tmp_path / "m.jsonl"
+    rows = [{"audio": f"{i}.wav", "text": f"t{i}"} for i in range(10)]
+    _write_manifest(manifest, rows)
+    items = load_manifest(manifest)
+    assert [item.audio for item in items] == [f"{i}.wav" for i in range(10)]
+
+
+def test_load_manifest_ignores_extra_keys(tmp_path):
+    manifest = tmp_path / "m.jsonl"
+    _write_manifest(manifest, [{"audio": "a.wav", "text": "x", "speaker": "s1", "duration": 3.2}])
+    items = load_manifest(manifest)
+    assert items == [ManifestItem(audio="a.wav", text="x")]
+
+
+def test_load_manifest_non_string_values_coerced(tmp_path):
+    manifest = tmp_path / "m.jsonl"
+    _write_manifest(manifest, [{"audio": "a.wav", "text": 42}])
+    items = load_manifest(manifest)
+    assert items[0].text == "42"
+
+
+def test_load_manifest_rejects_non_object_line(tmp_path):
+    manifest = tmp_path / "m.jsonl"
+    manifest.write_text('["not", "an", "object"]\n')
+    with pytest.raises(ManifestError, match="'audio' and 'text'"):
+        load_manifest(manifest)
 
 
 def test_evaluate_manifest_end_to_end(model, tmp_path):
