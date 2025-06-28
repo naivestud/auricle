@@ -38,6 +38,13 @@ def test_trailing_slash_in_base_url():
     assert calls[0]["url"] == "http://srv/v1/chat/completions"
 
 
+def test_no_auth_header_without_api_key():
+    transport, calls = _fake_transport({"choices": [{"message": {"content": "x"}}]})
+    backend = OpenAICompatBackend(model="m", api_key="", transport=transport)
+    backend.generate("hi")
+    assert "Authorization" not in calls[0]["headers"]
+
+
 def test_api_key_sent_as_bearer():
     transport, calls = _fake_transport({"choices": [{"message": {"content": "x"}}]})
     backend = OpenAICompatBackend(model="m", api_key="sekrit", transport=transport)

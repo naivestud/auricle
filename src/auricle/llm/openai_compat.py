@@ -68,10 +68,9 @@ class OpenAICompatBackend(LLMBackend):
             "max_tokens": max_new_tokens,
             "temperature": 0.0,
         }
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",
-        }
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
         url = f"{self.base_url}/chat/completions"
         response = self._request_with_retries(url, payload, headers)
 
