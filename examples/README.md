@@ -10,6 +10,9 @@ LLM backend (`--backend`).
 | `transcribe_wav.py` | Offline transcription of a WAV file |
 | `streaming_demo.py` | Incremental `feed`/`finalize` streaming ASR |
 | `caption_and_qa.py` | Audio captioning and speech question answering |
+| `beam_decode_demo.py` | Greedy vs. beam CTC decoding plus confidence |
+| `benchmark.py` | Real-time-factor throughput measurement |
+| `custom_backend.py` | Registering your own LLM backend |
 
 Run them from the repository root after an editable install:
 
