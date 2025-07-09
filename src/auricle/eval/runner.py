@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -40,6 +41,23 @@ class EvalReport:
             "audio_seconds": round(self.audio_seconds, 6),
             "per_sample": self.per_sample,
         }
+
+    def to_jsonl(self) -> str:
+        """One JSON object per scored sample, for line-oriented tooling.
+
+        The aggregate metrics are attached to each row so downstream consumers
+        (spreadsheets, ``jq``) can filter per-sample results without losing the
+        totals.
+        """
+        lines = []
+        for row in self.per_sample:
+            record = {
+                **row,
+                "wer_micro": round(self.wer_micro, 6),
+                "cer_micro": round(self.cer_micro, 6),
+            }
+            lines.append(json.dumps(record))
+        return "\n".join(lines) + ("\n" if lines else "")
 
 
 def evaluate_manifest(

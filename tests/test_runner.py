@@ -124,3 +124,31 @@ def test_evaluate_manifest_with_root(model, tmp_path):
     _write_manifest(manifest, [{"audio": "tone_1s.wav", "text": "a tone"}])
     report = evaluate_manifest(model, load_manifest(manifest), root=FIXTURES)
     assert report.n_samples == 1
+
+
+def test_report_to_jsonl(model, tmp_path):
+    manifest = tmp_path / "m.jsonl"
+    _write_manifest(
+        manifest,
+        [
+            {"audio": str(FIXTURES / "tone_1s.wav"), "text": "a steady tone"},
+            {"audio": str(FIXTURES / "sweep_2s.wav"), "text": "a rising sweep"},
+        ],
+    )
+    report = evaluate_manifest(model, load_manifest(manifest))
+
+    lines = report.to_jsonl().strip().splitlines()
+    assert len(lines) == 2
+    first = json.loads(lines[0])
+    # Per-sample fields and aggregate metrics are both present on each row.
+    assert {"audio", "reference", "hypothesis", "wer", "cer", "wer_micro", "cer_micro"} <= set(
+        first
+    )
+    assert first["wer_micro"] == pytest.approx(report.wer_micro)
+
+
+def test_report_to_jsonl_empty_report():
+    from auricle.eval.runner import EvalReport
+
+    report = EvalReport(n_samples=0, wer_micro=0.0, cer_micro=0.0)
+    assert report.to_jsonl() == ""
