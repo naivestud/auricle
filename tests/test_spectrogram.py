@@ -53,6 +53,14 @@ def test_n_frames_for():
     assert spec.n_frames_for(159) == 0
 
 
+def test_n_frames_exact_hop_multiple():
+    # A full 30 s whisper window must produce exactly 3000 frames.
+    spec = LogMelSpectrogram()
+    assert spec.n_frames_for(480_000) == 3000
+    out = spec(torch.randn(3_200))  # 0.2 s = 20 frames
+    assert out.shape[-1] == 20
+
+
 def test_spectrogram_silence_is_finite():
     spec = LogMelSpectrogram(n_mels=40)
     out = spec(torch.zeros(16_000))
