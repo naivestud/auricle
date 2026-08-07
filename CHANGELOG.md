@@ -4,6 +4,19 @@ All notable changes to auricle are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-08-08
+
+### Added
+- Pluggable LLM backends: `LLMBackend` protocol, a deterministic `echo`
+  backend, an OpenAI-compatible HTTP backend, and an optional HuggingFace
+  backend (`auricle[hf]`), all discoverable via `get_backend`.
+- Audio captioning (`caption_audio`) and speech question answering
+  (`answer_question`) pipelines.
+- JSONL evaluation manifests and an aggregate runner
+  (`evaluate_manifest` -> `EvalReport`) with micro WER / CER.
+- `auricle caption`, `auricle ask`, and `auricle eval` CLI subcommands.
+- Examples for transcription, streaming, and captioning/QA.
+
 ## [0.2.0] - 2026-08-08
 
 ### Added
