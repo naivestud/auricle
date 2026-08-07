@@ -50,6 +50,12 @@ def build_parser() -> argparse.ArgumentParser:
     ask.add_argument("--backend", default="echo", help="LLM backend name")
     add_model_args(ask)
 
+    eval_parser = subparsers.add_parser("eval", help="evaluate a model on a manifest")
+    eval_parser.add_argument("manifest", help="path to a JSONL manifest")
+    eval_parser.add_argument("--root", help="directory that relative audio paths resolve against")
+    eval_parser.add_argument("--out", help="write the JSON report here (default: stdout)")
+    add_model_args(eval_parser)
+
     return parser
 
 
@@ -99,6 +105,22 @@ def _run_ask(args) -> int:
     return 0
 
 
+def _run_eval(args) -> int:
+    import json
+
+    from auricle.eval.manifest import load_manifest
+    from auricle.eval.runner import evaluate_manifest
+
+    model = _load_model(args.checkpoint)
+    report = evaluate_manifest(model, load_manifest(args.manifest), root=args.root)
+    text = json.dumps(report.to_dict(), indent=2)
+    if args.out:
+        Path(args.out).write_text(text + "\n")
+    else:
+        print(text)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -114,6 +136,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run_caption(args)
     if args.command == "ask":
         return _run_ask(args)
+    if args.command == "eval":
+        return _run_eval(args)
 
     parser.print_help()
     return 0
