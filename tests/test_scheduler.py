@@ -38,6 +38,15 @@ def test_flush_empty_returns_none():
     assert sched.flush() is None
 
 
+def test_flush_skips_fragment_inside_overlap():
+    sched = StreamScheduler(chunk_seconds=1.0, overlap_seconds=0.25)
+    chunks = sched.push(np.zeros(16_000, dtype=np.float32))
+    assert len(chunks) == 1
+    # The 4000-sample remainder sits fully inside the emitted chunk's
+    # overlap, so re-decoding it would only repeat text.
+    assert sched.flush() is None
+
+
 def test_zero_overlap_tiles_exactly():
     sched = StreamScheduler(chunk_seconds=1.0, overlap_seconds=0.0)
     chunks = sched.push(np.zeros(32_000, dtype=np.float32))
