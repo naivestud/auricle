@@ -27,3 +27,19 @@ class EncoderBlock(nn.Module):
         x = x + self.attn(self.attn_norm(x))
         x = x + self.ff(self.ff_norm(x))
         return x
+
+
+class TransformerEncoder(nn.Module):
+    """A stack of :class:`EncoderBlock` with a final layer norm."""
+
+    def __init__(self, d_model: int, n_layers: int, n_heads: int, ff_mult: int = 4, dropout: float = 0.0):
+        super().__init__()
+        self.blocks = nn.ModuleList(
+            EncoderBlock(d_model, n_heads, ff_mult, dropout) for _ in range(n_layers)
+        )
+        self.norm = nn.LayerNorm(d_model)
+
+    def forward(self, x):
+        for block in self.blocks:
+            x = block(x)
+        return self.norm(x)
