@@ -31,7 +31,9 @@ def resample_linear(samples: np.ndarray, orig_sr: int, target_sr: int) -> np.nda
     return np.interp(x_new, x_old, samples).astype(np.float32)
 
 
-def to_waveform(audio: str | Path | np.ndarray | torch.Tensor, sample_rate: int | None = None) -> torch.Tensor:
+def to_waveform(
+    audio: str | Path | np.ndarray | torch.Tensor, sample_rate: int | None = None
+) -> torch.Tensor:
     """Normalise ``audio`` to a 16 kHz float32 mono tensor.
 
     Accepts a WAV path, a numpy array or a torch tensor. Arrays and tensors
@@ -53,7 +55,9 @@ def to_waveform(audio: str | Path | np.ndarray | torch.Tensor, sample_rate: int 
     return torch.from_numpy(np.ascontiguousarray(samples))
 
 
-def transcribe(model, audio: str | Path | np.ndarray | torch.Tensor, sample_rate: int | None = None) -> str:
+def transcribe(
+    model, audio: str | Path | np.ndarray | torch.Tensor, sample_rate: int | None = None
+) -> str:
     """Transcribe a whole utterance and return the text."""
     waveform = to_waveform(audio, sample_rate)
     texts = model.transcribe(waveform)

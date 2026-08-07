@@ -44,8 +44,7 @@ def load_checkpoint(directory: str | Path, map_location: str = "cpu"):
     weights_path = directory / WEIGHTS_NAME
     if not config_path.is_file() or not weights_path.is_file():
         raise CheckpointError(
-            f"{directory} is not a checkpoint directory "
-            f"(expected {CONFIG_NAME} and {WEIGHTS_NAME})"
+            f"{directory} is not a checkpoint directory (expected {CONFIG_NAME} and {WEIGHTS_NAME})"
         )
 
     try:
