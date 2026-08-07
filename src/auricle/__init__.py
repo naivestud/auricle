@@ -12,7 +12,7 @@ from auricle.model import AuricleModel
 from auricle.pipeline import answer_question, caption_audio, transcribe
 from auricle.streaming import StreamingASR
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "AuricleModel",
