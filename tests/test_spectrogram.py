@@ -53,6 +53,12 @@ def test_n_frames_for():
     assert spec.n_frames_for(159) == 0
 
 
+def test_spectrogram_silence_is_finite():
+    spec = LogMelSpectrogram(n_mels=40)
+    out = spec(torch.zeros(16_000))
+    assert torch.isfinite(out).all()
+
+
 def test_spectrogram_concentrates_energy():
     # A 440 Hz tone should put most energy in the low mel bands.
     spec = LogMelSpectrogram(n_mels=40)
