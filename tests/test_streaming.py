@@ -74,3 +74,20 @@ def test_streaming_with_real_model_deterministic():
     b = StreamingASR(model, chunk_seconds=1.0, overlap_seconds=0.25)
     assert a.feed(audio) == b.feed(audio)
     assert a.finalize() == b.finalize()
+
+
+def test_streaming_independent_of_push_block_size():
+    # The scheduler cuts chunks from cumulative samples, so how the caller
+    # slices the push() calls must not change the final transcript.
+    torch.manual_seed(17)
+    model = AuricleModel.tiny()
+    audio = np.random.default_rng(5).standard_normal(40_000).astype(np.float32)
+
+    results = []
+    for block in (4_000, 7_000, 40_000):
+        asr = StreamingASR(model, chunk_seconds=1.0, overlap_seconds=0.25)
+        for start in range(0, len(audio), block):
+            asr.feed(audio[start : start + block])
+        results.append(asr.finalize())
+
+    assert results[0] == results[1] == results[2]
