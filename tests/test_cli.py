@@ -26,7 +26,9 @@ def test_transcribe_fixture(capsys):
 
 
 def test_stream_fixture(capsys):
-    rc = main(["stream", str(FIXTURES / "tone_1s.wav"), "--chunk-seconds", "0.5"])
+    rc = main(
+        ["stream", str(FIXTURES / "tone_1s.wav"), "--chunk-seconds", "0.5", "--overlap-seconds", "0.1"]
+    )
     assert rc == 0
 
 
