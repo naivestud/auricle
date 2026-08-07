@@ -33,6 +33,12 @@ def build_parser() -> argparse.ArgumentParser:
     transcribe.add_argument("audio", help="path to a WAV file")
     add_model_args(transcribe)
 
+    stream = subparsers.add_parser("stream", help="stream a WAV file through the ASR")
+    stream.add_argument("audio", help="path to a WAV file")
+    stream.add_argument("--chunk-seconds", type=float, default=2.0)
+    stream.add_argument("--overlap-seconds", type=float, default=0.5)
+    add_model_args(stream)
+
     return parser
 
 
@@ -41,6 +47,24 @@ def _run_transcribe(args) -> int:
 
     model = _load_model(args.checkpoint)
     print(transcribe(model, args.audio))
+    return 0
+
+
+def _run_stream(args) -> int:
+    from auricle.audio.io import read_wav
+    from auricle.streaming.asr import StreamingASR
+
+    model = _load_model(args.checkpoint)
+    samples, _ = read_wav(args.audio)
+    asr = StreamingASR(model, args.chunk_seconds, args.overlap_seconds)
+
+    block = int(args.chunk_seconds * asr.scheduler.sample_rate)
+    final = ""
+    for start in range(0, len(samples), block):
+        final = asr.feed(samples[start : start + block])
+        print(final)
+    final = asr.finalize()
+    print(final)
     return 0
 
 
@@ -53,6 +77,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "transcribe":
         return _run_transcribe(args)
+    if args.command == "stream":
+        return _run_stream(args)
 
     parser.print_help()
     return 0
