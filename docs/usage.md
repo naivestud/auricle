@@ -44,8 +44,9 @@ text = transcribe(model, "audio.wav")
 ### Streaming
 
 ```python
-from auricle import StreamingASR
+from auricle import AuricleModel, StreamingASR
 
+model = AuricleModel.tiny()
 asr = StreamingASR(model, chunk_seconds=2.0, overlap_seconds=0.5)
 for block in mic_blocks:             # float32 mono numpy arrays
     partial = asr.feed(block)
