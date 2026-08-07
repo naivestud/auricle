@@ -77,12 +77,9 @@ def _run_stream(args) -> int:
     asr = StreamingASR(model, args.chunk_seconds, args.overlap_seconds)
 
     block = int(args.chunk_seconds * asr.scheduler.sample_rate)
-    final = ""
     for start in range(0, len(samples), block):
-        final = asr.feed(samples[start : start + block])
-        print(final)
-    final = asr.finalize()
-    print(final)
+        print(asr.feed(samples[start : start + block]))
+    print(asr.finalize())
     return 0
 
 
