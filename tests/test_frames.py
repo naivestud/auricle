@@ -28,7 +28,7 @@ def test_overlap_chunks_cover_audio():
     assert chunks[0].start == 0
     assert chunks[-1].end == 100
     # No gap between consecutive chunks.
-    for prev, nxt in zip(chunks, chunks[1:]):
+    for prev, nxt in zip(chunks, chunks[1:], strict=False):
         assert nxt.start <= prev.end
 
 

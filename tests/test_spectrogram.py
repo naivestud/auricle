@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from auricle.audio.spectrogram import LogMelSpectrogram, hz_to_mel, mel_to_hz, mel_filterbank
+from auricle.audio.spectrogram import LogMelSpectrogram, hz_to_mel, mel_filterbank, mel_to_hz
 
 
 def test_mel_conversions_roundtrip():

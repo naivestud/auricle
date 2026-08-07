@@ -28,9 +28,8 @@ def collapse_tokens(tokens: torch.Tensor, vocab: CharVocabulary) -> str:
     out: list[int] = []
     prev = None
     for token in tokens.tolist():
-        if token != prev:
-            if token != vocab.BLANK:
-                out.append(token)
+        if token != prev and token != vocab.BLANK:
+            out.append(token)
         prev = token
     return vocab.decode(out)
 

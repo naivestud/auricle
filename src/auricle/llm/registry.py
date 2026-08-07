@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+
 from auricle.errors import BackendNotFoundError
 from auricle.llm.base import LLMBackend
 
@@ -28,10 +30,8 @@ def get_backend(name: str, **kwargs) -> LLMBackend:
     ``transformers`` stays opt-in.
     """
     if name not in _REGISTRY and name == "huggingface":
-        try:
+        with contextlib.suppress(ImportError):
             import auricle.llm.hf  # noqa: F401  (registers itself)
-        except ImportError:
-            pass
 
     if name not in _REGISTRY:
         known = ", ".join(available_backends()) or "<none>"
