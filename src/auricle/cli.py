@@ -8,6 +8,7 @@ from pathlib import Path
 
 from auricle import __version__
 from auricle.checkpoint import load_checkpoint
+from auricle.errors import AuricleError
 from auricle.model import AuricleModel
 
 
@@ -125,19 +126,26 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    if args.command == "version":
-        print(__version__)
-        return 0
-    if args.command == "transcribe":
-        return _run_transcribe(args)
-    if args.command == "stream":
-        return _run_stream(args)
-    if args.command == "caption":
-        return _run_caption(args)
-    if args.command == "ask":
-        return _run_ask(args)
-    if args.command == "eval":
-        return _run_eval(args)
+    try:
+        if args.command == "version":
+            print(__version__)
+            return 0
+        if args.command == "transcribe":
+            return _run_transcribe(args)
+        if args.command == "stream":
+            return _run_stream(args)
+        if args.command == "caption":
+            return _run_caption(args)
+        if args.command == "ask":
+            return _run_ask(args)
+        if args.command == "eval":
+            return _run_eval(args)
+    except FileNotFoundError as exc:
+        print(f"auricle: no such file: {exc.filename or args}", file=sys.stderr)
+        return 2
+    except AuricleError as exc:
+        print(f"auricle: {exc}", file=sys.stderr)
+        return 2
 
     parser.print_help()
     return 0
