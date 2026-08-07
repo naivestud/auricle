@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 
-@dataclass
+@dataclass(kw_only=True)
 class EncoderConfig:
     """Hyperparameters for the audio encoder.
 
