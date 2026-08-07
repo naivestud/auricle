@@ -1,6 +1,7 @@
 import torch
 
-from auricle.asr.ctc import CTCHead, collapse_tokens, greedy_decode
+from auricle.asr.ctc import CTCHead
+from auricle.asr.decode import collapse_tokens, greedy_decode
 from auricle.asr.vocab import CharVocabulary
 
 
