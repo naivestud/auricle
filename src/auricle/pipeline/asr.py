@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from auricle.audio.io import read_wav
+from auricle.audio.wav import read_wav
 from auricle.constants import SAMPLE_RATE
 from auricle.errors import SampleRateError
 
