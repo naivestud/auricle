@@ -21,5 +21,3 @@ N_MELS = 80
 
 CHUNK_SECONDS = 30.0
 """Maximum audio window a single encoder pass consumes."""
-
-MAX_BATCH = 16
