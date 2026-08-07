@@ -39,6 +39,17 @@ def build_parser() -> argparse.ArgumentParser:
     stream.add_argument("--overlap-seconds", type=float, default=0.5)
     add_model_args(stream)
 
+    caption = subparsers.add_parser("caption", help="caption a WAV file")
+    caption.add_argument("audio", help="path to a WAV file")
+    caption.add_argument("--backend", default="echo", help="LLM backend name")
+    add_model_args(caption)
+
+    ask = subparsers.add_parser("ask", help="ask a question about a WAV file")
+    ask.add_argument("audio", help="path to a WAV file")
+    ask.add_argument("--question", required=True, help="question to ask")
+    ask.add_argument("--backend", default="echo", help="LLM backend name")
+    add_model_args(ask)
+
     return parser
 
 
@@ -68,6 +79,26 @@ def _run_stream(args) -> int:
     return 0
 
 
+def _run_caption(args) -> int:
+    from auricle.llm import get_backend
+    from auricle.pipeline.caption import caption_audio
+
+    model = _load_model(args.checkpoint)
+    backend = get_backend(args.backend)
+    print(caption_audio(model, backend, args.audio))
+    return 0
+
+
+def _run_ask(args) -> int:
+    from auricle.llm import get_backend
+    from auricle.pipeline.qa import answer_question
+
+    model = _load_model(args.checkpoint)
+    backend = get_backend(args.backend)
+    print(answer_question(model, backend, args.audio, args.question))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -79,6 +110,10 @@ def main(argv: list[str] | None = None) -> int:
         return _run_transcribe(args)
     if args.command == "stream":
         return _run_stream(args)
+    if args.command == "caption":
+        return _run_caption(args)
+    if args.command == "ask":
+        return _run_ask(args)
 
     parser.print_help()
     return 0
