@@ -28,7 +28,7 @@ ruff format --check .
 ```
 
 All three must pass before a PR can merge. CI runs them across Python
-3.10–3.12.
+3.10–3.14.
 
 ## Making changes
 
